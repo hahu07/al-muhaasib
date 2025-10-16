@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { initSatellite } from '@junobuild/core';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SchoolProvider } from '@/contexts/SchoolContext';
 
 export function JunoProvider({ children }: { children: React.ReactNode }) {
   const [initialized, setInitialized] = useState(false);
@@ -56,7 +57,9 @@ export function JunoProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
-      {children}
+      <SchoolProvider>
+        {children}
+      </SchoolProvider>
     </AuthProvider>
   );
 }

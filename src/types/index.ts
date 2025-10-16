@@ -11,6 +11,120 @@
  */
 
 // ============================================
+// SCHOOL CONFIGURATION & MULTI-TENANT TYPES
+// ============================================
+
+export type ModuleName = 'students' | 'fees' | 'payments' | 'expenses' | 'staff' | 'assets' | 'reports' | 'accounting';
+
+export type AcademicTerm = 'first' | 'second' | 'third';
+
+export interface SchoolBranding {
+  logo?: string;
+  favicon?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  fontFamily?: string;
+}
+
+export interface AcademicSession {
+  id: string;
+  name: string; // e.g., "2024/2025"
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+
+export interface TermSettings {
+  id: string;
+  name: AcademicTerm;
+  label: string; // e.g., "First Term"
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+
+export interface SchoolConfig {
+  id: string;
+  
+  // Basic Information
+  schoolName: string;
+  schoolCode: string; // Unique identifier
+  motto?: string;
+  
+  // Contact Information
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode?: string;
+  phone: string;
+  email: string;
+  website?: string;
+  
+  // Branding
+  branding: SchoolBranding;
+  
+  // Regional Settings
+  currency: string; // e.g., "NGN", "USD"
+  currencySymbol: string; // e.g., "₦", "$"
+  timezone: string; // e.g., "Africa/Lagos"
+  locale: string; // e.g., "en-NG"
+  dateFormat: string; // e.g., "DD/MM/YYYY"
+  
+  // Academic Settings
+  currentSession: string; // e.g., "2024/2025"
+  currentTerm: AcademicTerm;
+  sessions: AcademicSession[];
+  terms: TermSettings[];
+  
+  // System Configuration
+  enabledModules: ModuleName[];
+  
+  // Payment Settings
+  allowPartialPayments: boolean;
+  lateFeePercentage?: number;
+  defaultPaymentMethods: ('cash' | 'bank_transfer' | 'pos' | 'online' | 'cheque')[];
+  
+  // Reporting Settings
+  reportHeader?: string;
+  reportFooter?: string;
+  
+  // Custom Fields
+  customFields?: Record<string, unknown>;
+  
+  // Multi-tenant
+  satelliteId: string; // Juno satellite ID
+  
+  // Status
+  isActive: boolean;
+  subscriptionStatus?: 'trial' | 'active' | 'suspended' | 'cancelled';
+  subscriptionExpiresAt?: string;
+  
+  // Metadata
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  [key: string]: unknown;
+}
+
+export interface SchoolLicense {
+  id: string;
+  schoolId: string;
+  licenseKey: string;
+  plan: 'basic' | 'standard' | 'premium' | 'enterprise';
+  maxUsers: number;
+  maxStudents: number;
+  features: string[];
+  startDate: string;
+  expiryDate: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+// ============================================
 // USER & AUTHENTICATION TYPES
 // ============================================
 

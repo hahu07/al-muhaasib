@@ -7,6 +7,9 @@
 export * from './dataService';
 export * from './userService';
 
+// School configuration
+export * from './schoolConfigService';
+
 // School management
 export * from './classService';
 

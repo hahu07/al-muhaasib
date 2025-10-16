@@ -168,9 +168,9 @@ const ReportsDashboard: React.FC = () => {
             <Button
               variant="outline"
               onClick={refreshReports}
-              disabled={loading}
+              disabled={loading.incomeStatement || loading.balanceSheet || loading.cashFlowStatement}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading.incomeStatement || loading.balanceSheet || loading.cashFlowStatement ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button onClick={exportAllReports}>
