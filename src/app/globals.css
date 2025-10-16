@@ -1,0 +1,444 @@
+@import "tailwindcss";
+
+/* Base styles for better compatibility */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* CSS Variables for theme */
+:root {
+  --bg-color: rgb(0 0 0); /* Default dark */
+  --text-color: rgb(147 197 253);
+}
+
+html.light {
+  --bg-color: rgb(255 255 255);
+  --text-color: rgb(17 24 39);
+  color-scheme: light;
+}
+
+html.dark {
+  --bg-color: rgb(0 0 0);
+  --text-color: rgb(147 197 253);
+  color-scheme: dark;
+}
+
+/* Apply theme colors */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light mode headings - with high specificity */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6,
+body.light h1,
+body.light h2,
+body.light h3,
+body.light h4,
+body.light h5,
+body.light h6 {
+  color: rgb(17 24 39) !important; /* gray-900 */
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+}
+
+/* Light mode text - base elements */
+html.light,
+html.light *:not(.gradient-text),
+body.light,
+body.light *:not(.gradient-text) {
+  color: rgb(31 41 55) !important; /* gray-800 */
+}
+
+/* Light mode specific overrides */
+html.light,
+html.light * {
+  color-scheme: light;
+}
+
+/* Light mode SVG icons */
+html.light svg,
+html.light svg *,
+body.light svg,
+body.light svg * {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Light mode for Lucide icons specifically */
+html.light .lucide,
+html.light .lucide *,
+body.light .lucide,
+body.light .lucide * {
+  color: rgb(31 41 55) !important; /* gray-800 */
+  stroke: currentColor !important;
+}
+
+/* Light mode input elements */
+html.light input,
+html.light textarea,
+html.light select,
+body.light input,
+body.light textarea,
+body.light select {
+  color: rgb(17 24 39) !important; /* gray-900 */
+  background-color: rgb(255 255 255) !important;
+  border-color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+html.light input::placeholder,
+body.light input::placeholder {
+  color: rgb(156 163 175) !important; /* gray-400 */
+}
+
+/* Light mode buttons */
+html.light button,
+html.light button *,
+body.light button,
+body.light button * {
+  color: inherit !important;
+}
+
+/* Light mode card backgrounds */
+html.light .bg-white,
+body.light .bg-white {
+  background-color: rgb(255 255 255) !important;
+}
+
+html.light .bg-gray-50,
+body.light .bg-gray-50 {
+  background-color: rgb(249 250 251) !important;
+}
+
+html.light .bg-gray-100,
+body.light .bg-gray-100 {
+  background-color: rgb(243 244 246) !important;
+}
+
+/* Light mode borders */
+html.light .border-gray-200,
+body.light .border-gray-200 {
+  border-color: rgb(229 231 235) !important;
+}
+
+html.light .border-gray-300,
+body.light .border-gray-300 {
+  border-color: rgb(209 213 219) !important;
+}
+
+/* Light mode text colors - specific overrides */
+html.light .text-gray-900,
+body.light .text-gray-900 {
+  color: rgb(17 24 39) !important;
+}
+
+html.light .text-gray-700,
+body.light .text-gray-700 {
+  color: rgb(55 65 81) !important;
+}
+
+html.light .text-gray-600,
+body.light .text-gray-600 {
+  color: rgb(75 85 99) !important;
+}
+
+html.light .text-gray-500,
+body.light .text-gray-500 {
+  color: rgb(107 114 128) !important;
+}
+
+/* Light mode blue colors */
+html.light .bg-blue-100,
+body.light .bg-blue-100 {
+  background-color: rgb(219 234 254) !important;
+}
+
+html.light .text-blue-700,
+body.light .text-blue-700 {
+  color: rgb(29 78 216) !important;
+}
+
+html.light .text-blue-600,
+body.light .text-blue-600 {
+  color: rgb(37 99 235) !important;
+}
+
+/* Light mode for status colors */
+html.light .text-green-600,
+body.light .text-green-600 {
+  color: rgb(22 163 74) !important;
+}
+
+html.light .text-yellow-600,
+body.light .text-yellow-600 {
+  color: rgb(202 138 4) !important;
+}
+
+html.light .text-red-600,
+body.light .text-red-600 {
+  color: rgb(220 38 38) !important;
+}
+
+html.light .text-purple-600,
+body.light .text-purple-600 {
+  color: rgb(147 51 234) !important;
+}
+
+/* Dark mode text styling */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6,
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark h4,
+body.dark h5,
+body.dark h6 {
+  background: linear-gradient(135deg, rgb(147 197 253), rgb(196 181 253));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html.dark p,
+html.dark span,
+html.dark div,
+html.dark a,
+body.dark p,
+body.dark span,
+body.dark div,
+body.dark a {
+  color: rgb(147 197 253); /* blue-300 */
+}
+
+/* Gradient text class for both modes */
+.gradient-text {
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+}
+
+/* Theme-adaptive card styling */
+.theme-card {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.light .theme-card,
+body.light .theme-card {
+  background-color: rgb(255 255 255);
+  border: 1px solid rgb(229 231 235); /* gray-200 */
+}
+
+html.dark .theme-card,
+body.dark .theme-card {
+  background-color: rgb(17 24 39); /* gray-900 */
+  border: 1px solid rgb(55 65 81); /* gray-700 */
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+html.light .theme-toggle,
+body.light .theme-toggle {
+  background-color: rgb(243 244 246); /* gray-100 */
+  color: rgb(55 65 81); /* gray-700 */
+  border: 1px solid rgb(209 213 219); /* gray-300 */
+}
+
+html.light .theme-toggle:hover,
+body.light .theme-toggle:hover {
+  background-color: rgb(229 231 235); /* gray-200 */
+}
+
+html.dark .theme-toggle,
+body.dark .theme-toggle {
+  background-color: rgb(31 41 55); /* gray-800 */
+  color: rgb(147 197 253); /* blue-300 */
+  border: 1px solid rgb(55 65 81); /* gray-700 */
+}
+
+html.dark .theme-toggle:hover,
+body.dark .theme-toggle:hover {
+  background-color: rgb(55 65 81); /* gray-700 */
+}
+
+/* Dropdown menu styling */
+.bg-popover {
+  background-color: var(--color-popover);
+}
+
+.text-popover-foreground {
+  color: var(--color-popover-foreground);
+}
+
+.bg-accent {
+  background-color: var(--color-accent);
+}
+
+.text-accent-foreground {
+  color: var(--color-accent-foreground);
+}
+
+.bg-muted {
+  background-color: var(--color-muted);
+}
+
+/* Dark mode dropdown overrides */
+html.dark .bg-popover,
+body.dark .bg-popover {
+  background-color: rgb(31 41 55); /* gray-800 */
+}
+
+html.dark .text-popover-foreground,
+body.dark .text-popover-foreground {
+  color: rgb(229 231 235); /* gray-200 */
+}
+
+html.dark .bg-accent,
+body.dark .bg-accent {
+  background-color: rgb(55 65 81); /* gray-700 */
+}
+
+html.dark .text-accent-foreground,
+body.dark .text-accent-foreground {
+  color: rgb(229 231 235); /* gray-200 */
+}
+
+html.dark .bg-muted,
+body.dark .bg-muted {
+  background-color: rgb(55 65 81); /* gray-700 */
+}
+
+/* Custom theme colors for Al-Muhaasib */
+@theme {
+  --font-display: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Essential colors */
+  --color-inherit: inherit;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-black: rgb(0 0 0);
+  --color-white: rgb(255 255 255);
+
+  /* Gray scale */
+  --color-gray-50: rgb(249 250 251);
+  --color-gray-100: rgb(243 244 246);
+  --color-gray-200: rgb(229 231 235);
+  --color-gray-300: rgb(209 213 219);
+  --color-gray-400: rgb(156 163 175);
+  --color-gray-500: rgb(107 114 128);
+  --color-gray-600: rgb(75 85 99);
+  --color-gray-700: rgb(55 65 81);
+  --color-gray-800: rgb(31 41 55);
+  --color-gray-900: rgb(17 24 39);
+
+  /* Blue colors */
+  --color-blue-50: rgb(239 246 255);
+  --color-blue-100: rgb(219 234 254);
+  --color-blue-200: rgb(191 219 254);
+  --color-blue-300: rgb(147 197 253);
+  --color-blue-400: rgb(96 165 250);
+  --color-blue-500: rgb(59 130 246);
+  --color-blue-600: rgb(37 99 235);
+  --color-blue-700: rgb(29 78 216);
+  --color-blue-800: rgb(30 64 175);
+  --color-blue-900: rgb(30 58 138);
+
+  /* Indigo colors */
+  --color-indigo-50: rgb(238 242 255);
+  --color-indigo-100: rgb(224 231 255);
+  --color-indigo-200: rgb(199 210 254);
+  --color-indigo-300: rgb(165 180 252);
+  --color-indigo-400: rgb(129 140 248);
+  --color-indigo-500: rgb(99 102 241);
+  --color-indigo-600: rgb(79 70 229);
+  --color-indigo-700: rgb(67 56 202);
+  --color-indigo-800: rgb(55 48 163);
+  --color-indigo-900: rgb(49 46 129);
+
+  /* Green colors */
+  --color-green-50: rgb(240 253 244);
+  --color-green-100: rgb(220 252 231);
+  --color-green-200: rgb(187 247 208);
+  --color-green-300: rgb(134 239 172);
+  --color-green-400: rgb(74 222 128);
+  --color-green-500: rgb(34 197 94);
+  --color-green-600: rgb(22 163 74);
+  --color-green-700: rgb(21 128 61);
+  --color-green-800: rgb(22 101 52);
+  --color-green-900: rgb(20 83 45);
+
+  /* Red colors */
+  --color-red-50: rgb(254 242 242);
+  --color-red-100: rgb(254 226 226);
+  --color-red-200: rgb(254 202 202);
+  --color-red-300: rgb(252 165 165);
+  --color-red-400: rgb(248 113 113);
+  --color-red-500: rgb(239 68 68);
+  --color-red-600: rgb(220 38 38);
+  --color-red-700: rgb(185 28 28);
+  --color-red-800: rgb(153 27 27);
+  --color-red-900: rgb(127 29 29);
+
+  /* Yellow colors */
+  --color-yellow-50: rgb(254 252 232);
+  --color-yellow-100: rgb(254 249 195);
+  --color-yellow-200: rgb(254 240 138);
+  --color-yellow-300: rgb(253 224 71);
+  --color-yellow-400: rgb(250 204 21);
+  --color-yellow-500: rgb(234 179 8);
+  --color-yellow-600: rgb(202 138 4);
+  --color-yellow-700: rgb(161 98 7);
+  --color-yellow-800: rgb(133 77 14);
+  --color-yellow-900: rgb(113 63 18);
+
+  /* Purple colors */
+  --color-purple-50: rgb(250 245 255);
+  --color-purple-100: rgb(243 232 255);
+  --color-purple-200: rgb(233 213 255);
+  --color-purple-300: rgb(216 180 254);
+  --color-purple-400: rgb(196 181 253);
+  --color-purple-500: rgb(168 85 247);
+  --color-purple-600: rgb(147 51 234);
+  --color-purple-700: rgb(126 34 206);
+  --color-purple-800: rgb(107 33 168);
+  --color-purple-900: rgb(88 28 135);
+
+  /* Dropdown menu colors */
+  --color-popover: rgb(255 255 255);
+  --color-popover-foreground: rgb(17 24 39);
+  --color-accent: rgb(243 244 246);
+  --color-accent-foreground: rgb(17 24 39);
+  --color-muted: rgb(229 231 235);
+  --color-border: rgb(229 231 235);
+}

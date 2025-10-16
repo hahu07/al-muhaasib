@@ -1,0 +1,217 @@
+'use client';
+
+import React from 'react';
+import { PrinterIcon, DownloadIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { Payment } from '@/types';
+
+interface PaymentReceiptProps {
+  payment: Payment;
+  receiptNumber: string;
+  schoolName?: string;
+  schoolAddress?: string;
+  schoolPhone?: string;
+  onClose?: () => void;
+}
+
+export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
+  payment,
+  receiptNumber,
+  schoolName = 'Al-Muhaasib School',
+  schoolAddress = 'School Address Here',
+  schoolPhone = '+234 XXX XXX XXXX',
+  onClose,
+}) => {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  return (
+    <div className="bg-white">
+      {/* Action Buttons - Hide on print */}
+      <div className="flex justify-end gap-2 mb-4 print:hidden">
+        <Button variant="outline" size="sm" onClick={handlePrint}>
+          <PrinterIcon className="w-4 h-4 mr-2" />
+          Print
+        </Button>
+        {onClose && (
+          <Button variant="outline" size="sm" onClick={onClose}>
+            <XIcon className="w-4 h-4 mr-2" />
+            Close
+          </Button>
+        )}
+      </div>
+
+      {/* Receipt Content */}
+      <div className="border-2 border-gray-300 rounded-lg p-8 print:border-0">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <span className="text-white font-bold text-2xl">₦</span>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{schoolName}</h1>
+          <p className="text-gray-600">{schoolAddress}</p>
+          <p className="text-gray-600">{schoolPhone}</p>
+          <div className="mt-4 pt-4 border-t-2 border-gray-300">
+            <h2 className="text-xl font-semibold text-gray-900">PAYMENT RECEIPT</h2>
+            <p className="text-gray-600 mt-1">Receipt No: {receiptNumber}</p>
+          </div>
+        </div>
+
+        {/* Student & Payment Info */}
+        <div className="grid grid-cols-2 gap-8 mb-8">
+          {/* Left Column */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Student Information</h3>
+            <div className="space-y-2">
+              <div>
+                <span className="text-sm text-gray-600">Name:</span>
+                <p className="font-medium text-gray-900">{payment.studentName}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">Class:</span>
+                <p className="font-medium text-gray-900">{payment.className}</p>
+              </div>
+              {payment.paidBy && (
+                <div>
+                  <span className="text-sm text-gray-600">Paid By:</span>
+                  <p className="font-medium text-gray-900">{payment.paidBy}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Payment Details</h3>
+            <div className="space-y-2">
+              <div>
+                <span className="text-sm text-gray-600">Date:</span>
+                <p className="font-medium text-gray-900">{formatDate(payment.paymentDate)}</p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">Payment Method:</span>
+                <p className="font-medium text-gray-900 capitalize">
+                  {payment.paymentMethod.replace('_', ' ')}
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600">Reference:</span>
+                <p className="font-medium text-gray-900">{payment.reference}</p>
+              </div>
+              {payment.transactionId && (
+                <div>
+                  <span className="text-sm text-gray-600">Transaction ID:</span>
+                  <p className="font-medium text-gray-900 text-xs">{payment.transactionId}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Fee Breakdown */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Payment Breakdown</h3>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b-2 border-gray-300">
+                <th className="text-left py-2 text-sm font-semibold text-gray-900">Fee Category</th>
+                <th className="text-right py-2 text-sm font-semibold text-gray-900">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payment.feeAllocations.map((allocation, index) => (
+                <tr key={index} className="border-b border-gray-200">
+                  <td className="py-3 text-gray-900">{allocation.categoryName}</td>
+                  <td className="py-3 text-right text-gray-900">{formatCurrency(allocation.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-gray-300">
+                <td className="py-4 text-lg font-bold text-gray-900">Total Amount Paid</td>
+                <td className="py-4 text-right text-lg font-bold text-gray-900">
+                  {formatCurrency(payment.amount)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* Notes */}
+        {payment.notes && (
+          <div className="mb-8">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Notes</h3>
+            <p className="text-gray-700 text-sm italic">{payment.notes}</p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-12 pt-6 border-t border-gray-300">
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <p className="text-sm text-gray-600 mb-4">Received By:</p>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="text-sm text-gray-900">Authorized Signature</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-4">Date:</p>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="text-sm text-gray-900">{formatDate(payment.paymentDate)}</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              This is an official receipt. Please keep for your records.
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Generated on {new Date().toLocaleString('en-NG')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .bg-white,
+          .bg-white * {
+            visibility: visible;
+          }
+          .bg-white {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          @page {
+            margin: 2cm;
+            size: A4;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};

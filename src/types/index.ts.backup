@@ -1,0 +1,389 @@
+import { Doc } from "@junobuild/core";
+
+export interface StudentProfile {
+  id: string;
+  name: string;
+  classLevel: string;
+  guardianName: string;
+  phone: string;
+  totalFees: number;
+  amountPaid: number;
+  balance: number;
+  admissionDate: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: unknown; // Index signature for TypeScript compatibility
+}
+
+export interface ClassLevel {
+    student: StudentProfile
+}
+
+export type Class = Doc<ClassLevel>;
+
+
+
+export interface Transaction {
+  id: string;
+  studentId: string;
+  amount: number;
+  paymentMethod: 'cash' | 'transfer' | 'paystack';
+  date: string;
+  reference: string;
+  description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: unknown; // Index signature for TypeScript compatibility
+}
+
+// ============================================
+// CAPITAL EXPENDITURE & ASSET MANAGEMENT
+// ============================================
+
+/**
+ * Asset categories
+ */
+export type AssetCategory =
+  // Building & Land
+  | 'land'
+  | 'buildings'
+  | 'building_improvements'
+  
+  // Furniture & Fixtures
+  | 'classroom_furniture'
+  | 'office_furniture'
+  | 'fixtures'
+  
+  // Equipment
+  | 'computer_equipment'
+  | 'laboratory_equipment'
+  | 'sports_equipment'
+  | 'kitchen_equipment'
+  | 'office_equipment'
+  | 'audio_visual_equipment'
+  | 'generator'
+  | 'air_conditioning'
+  
+  // Vehicles
+  | 'school_buses'
+  | 'cars'
+  | 'motorcycles'
+  
+  // Other
+  | 'library_books'
+  | 'software'
+  | 'other';
+
+/**
+ * Fixed Asset record
+ */
+export interface FixedAsset {
+  id: string;
+  
+  // Asset identification
+  assetCode: string; // Unique asset tag/code
+  assetName: string;
+  category: AssetCategory;
+  
+  // Financial details
+  purchasePrice: number;
+  currentValue: number; // Book value after depreciation
+  accumulatedDepreciation: number;
+  residualValue: number; // Salvage value
+  
+  // Purchase information
+  purchaseDate: string;
+  vendor?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  warranty?: AssetWarranty;
+  
+  // Location
+  location: string; // e.g., "Main Building", "Computer Lab"
+  assignedTo?: string; // Department or person
+  
+  // Depreciation
+  depreciationMethod: 'straight-line' | 'declining-balance' | 'units-of-production' | 'none';
+  usefulLifeYears: number;
+  depreciationRate?: number; // Percentage for declining balance
+  
+  // Maintenance
+  lastMaintenanceDate?: string;
+  nextMaintenanceDate?: string;
+  maintenanceSchedule?: 'monthly' | 'quarterly' | 'annually' | 'as-needed';
+  
+  // Status
+  status: 'active' | 'under-maintenance' | 'disposed' | 'lost' | 'damaged';
+  condition?: 'excellent' | 'good' | 'fair' | 'poor';
+  
+  // Description & notes
+  description?: string;
+  specifications?: string;
+  serialNumber?: string;
+  notes?: string;
+  
+  // Disposal (if applicable)
+  disposalDate?: string;
+  disposalMethod?: 'sold' | 'donated' | 'scrapped';
+  disposalAmount?: number;
+  
+  // Metadata
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+export interface AssetWarranty {
+  startDate: string;
+  endDate: string;
+  warrantyPeriodMonths: number;
+  warrantyProvider: string;
+  coverageDetails?: string;
+}
+
+/**
+ * Capital Expenditure record
+ */
+export interface CapitalExpenditure {
+  id: string;
+  
+  // Project/Purchase details
+  projectName: string;
+  category: AssetCategory;
+  description: string;
+  
+  // Financial
+  budgetedAmount: number;
+  actualAmount: number;
+  variance: number; // budgeted - actual
+  
+  // Payment details
+  paymentMethod: 'cash' | 'bank_transfer' | 'cheque' | 'loan' | 'installment';
+  paymentStatus: 'pending' | 'partial' | 'completed';
+  totalPaid: number;
+  balance: number;
+  
+  // Vendor
+  vendorName: string;
+  vendorContact?: string;
+  contractNumber?: string;
+  
+  // Dates
+  startDate: string;
+  expectedCompletionDate?: string;
+  actualCompletionDate?: string;
+  
+  // Approval
+  status: 'proposed' | 'approved' | 'in-progress' | 'completed' | 'rejected';
+  approvedBy?: string;
+  approvalDate?: string;
+  
+  // Documentation
+  documents?: CapExDocument[];
+  
+  // Asset reference (if asset created)
+  assetId?: string; // Reference to FixedAsset created from this CapEx
+  
+  // Funding source
+  fundingSource?: 'revenue' | 'loan' | 'grant' | 'donation' | 'mixed';
+  
+  // Metadata
+  proposedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+export interface CapExDocument {
+  name: string;
+  type: 'quotation' | 'contract' | 'invoice' | 'receipt' | 'approval' | 'other';
+  url: string;
+  uploadedAt: Date;
+}
+
+/**
+ * Depreciation schedule entry
+ */
+export interface DepreciationEntry {
+  id: string;
+  
+  // Asset reference
+  assetId: string;
+  assetName: string;
+  assetCode: string;
+  
+  // Period
+  year: string; // e.g., "2024"
+  month?: string; // e.g., "2024-01" for monthly depreciation
+  
+  // Values
+  openingValue: number;
+  depreciationAmount: number;
+  closingValue: number;
+  accumulatedDepreciation: number;
+  
+  // Status
+  status: 'calculated' | 'posted' | 'reversed';
+  journalEntryId?: string; // Reference to journal entry
+  
+  // Metadata
+  calculatedBy: string;
+  calculatedAt: Date;
+  postedAt?: Date;
+  [key: string]: unknown;
+}
+
+/**
+ * Asset maintenance record
+ */
+export interface AssetMaintenance {
+  id: string;
+  
+  // Asset reference
+  assetId: string;
+  assetName: string;
+  assetCode: string;
+  
+  // Maintenance details
+  maintenanceType: 'routine' | 'repair' | 'upgrade' | 'inspection';
+  description: string;
+  issue?: string; // Problem that needed fixing
+  
+  // Service provider
+  serviceProvider?: string;
+  technicianName?: string;
+  
+  // Financial
+  cost: number;
+  paymentMethod: 'cash' | 'bank_transfer' | 'cheque';
+  reference?: string;
+  
+  // Dates
+  scheduledDate?: string;
+  actualDate: string;
+  completionDate?: string;
+  
+  // Status
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  
+  // Documentation
+  invoiceUrl?: string;
+  reportUrl?: string;
+  
+  // Next maintenance
+  nextMaintenanceDate?: string;
+  
+  // Metadata
+  recordedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+/**
+ * Asset disposal record
+ */
+export interface AssetDisposal {
+  id: string;
+  
+  // Asset reference
+  assetId: string;
+  assetName: string;
+  assetCode: string;
+  
+  // Disposal details
+  disposalDate: string;
+  disposalMethod: 'sale' | 'donation' | 'scrap' | 'trade-in' | 'lost' | 'stolen' | 'damaged-beyond-repair';
+  reason: string;
+  
+  // Financial
+  bookValue: number; // Value in books at disposal
+  disposalAmount: number; // Amount received (if sold)
+  gainOrLoss: number; // disposal amount - book value
+  
+  // Buyer/Recipient (if applicable)
+  buyerName?: string;
+  buyerContact?: string;
+  
+  // Approval
+  status: 'pending' | 'approved' | 'completed';
+  approvedBy?: string;
+  approvalDate?: string;
+  
+  // Documentation
+  documents?: DisposalDocument[];
+  
+  // Accounting
+  journalEntryId?: string; // Reference to journal entry
+  
+  // Metadata
+  recordedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+export interface DisposalDocument {
+  name: string;
+  type: 'disposal-form' | 'receipt' | 'certificate' | 'photo' | 'other';
+  url: string;
+  uploadedAt: Date;
+}
+
+/**
+ * Asset valuation record (for revaluation)
+ */
+export interface AssetValuation {
+  id: string;
+  
+  // Asset reference
+  assetId: string;
+  assetName: string;
+  assetCode: string;
+  
+  // Valuation details
+  valuationDate: string;
+  previousValue: number;
+  newValue: number;
+  revaluationAmount: number; // difference
+  
+  // Valuer
+  valuedBy: string; // Person or firm
+  valuationMethod: string;
+  
+  // Reason
+  reason: 'market-value-change' | 'periodic-revaluation' | 'impairment' | 'other';
+  notes?: string;
+  
+  // Documentation
+  valuationReport?: string; // URL
+  
+  // Status
+  status: 'pending' | 'approved' | 'posted';
+  approvedBy?: string;
+  journalEntryId?: string;
+  
+  // Metadata
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  [key: string]: unknown;
+}
+
+// User roles for the school accounting system
+export type UserRole = 'accounting' | 'admin';
+
+export interface AppUser {
+  id: string;
+  internetIdentityId: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  permissions: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  lastLogin?: Date;
+  [key: string]: unknown;
+}

@@ -1,0 +1,36 @@
+{
+  "name": "al-muhaasib",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "postinstall:copy-auth": "node -e \"require('fs').cpSync('node_modules/@junobuild/core/dist/workers/', './public/workers', {recursive: true});\"",
+    "postinstall": "npm run postinstall:copy-auth"
+  },
+  "dependencies": {
+    "@junobuild/core": "^2.2.0",
+    "lucide-react": "^0.545.0",
+    "next": "15.5.2",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@junobuild/config": "^2.4.3",
+    "@junobuild/nextjs-plugin": "^4.3.0",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.2",
+    "postcss": "^8",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5"
+  }
+}
