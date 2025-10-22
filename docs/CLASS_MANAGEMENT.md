@@ -12,6 +12,7 @@ Added a comprehensive Class Management system that allows users to dynamically c
 ## Features
 
 ### ✅ Class Creation
+
 - Dynamic form to create new classes
 - Required fields: Name, Level, Capacity, Academic Year
 - Optional fields: Section, Room/Location
@@ -19,17 +20,20 @@ Added a comprehensive Class Management system that allows users to dynamically c
 - Smart validation (capacity, duplicate prevention)
 
 ### ✅ Class Editing
+
 - Edit all class properties
 - Cannot reduce capacity below current enrollment
 - Update academic year
 - Toggle active status
 
 ### ✅ Class Deletion
+
 - Delete classes with zero enrollment
 - Protection: Cannot delete classes with students
 - Confirmation dialog
 
 ### ✅ Class Listing
+
 - Card-based grid layout
 - Statistics dashboard (Total, Capacity, Enrolled, Available)
 - Visual enrollment progress bars
@@ -37,6 +41,7 @@ Added a comprehensive Class Management system that allows users to dynamically c
 - Level badges (Nursery, Primary, JSS, SSS)
 
 ### ✅ Search & Filtering
+
 - Search by name, section, or room
 - Filter by level (Nursery, Primary, JSS, SSS)
 - Real-time filtering
@@ -44,9 +49,11 @@ Added a comprehensive Class Management system that allows users to dynamically c
 ## Components
 
 ### 1. ClassManagement.tsx
+
 **Location**: `src/components/classes/ClassManagement.tsx`
 
 **Features**:
+
 - Full CRUD operations
 - Statistics cards
 - Search & filter
@@ -56,9 +63,11 @@ Added a comprehensive Class Management system that allows users to dynamically c
 - Loading states
 
 ### 2. ClassForm.tsx
+
 **Location**: `src/components/classes/ClassForm.tsx`
 
 **Features**:
+
 - Create/Edit mode
 - Field validation
 - Capacity enforcement
@@ -67,6 +76,7 @@ Added a comprehensive Class Management system that allows users to dynamically c
 - Error handling
 
 ### 3. Route Page
+
 **Location**: `src/app/classes/page.tsx`
 
 Simple page wrapper for the ClassManagement component.
@@ -74,6 +84,7 @@ Simple page wrapper for the ClassManagement component.
 ## User Workflows
 
 ### Create a Class
+
 ```
 1. Navigate to /classes
 2. Click "Create Class" button
@@ -89,6 +100,7 @@ Simple page wrapper for the ClassManagement component.
 ```
 
 ### Edit a Class
+
 ```
 1. Navigate to /classes
 2. Find the class card
@@ -98,6 +110,7 @@ Simple page wrapper for the ClassManagement component.
 ```
 
 ### Delete a Class
+
 ```
 1. Navigate to /classes
 2. Find the class card
@@ -107,6 +120,7 @@ Simple page wrapper for the ClassManagement component.
 ```
 
 ### Search/Filter Classes
+
 ```
 1. Navigate to /classes
 2. Use search box for name/section/room
@@ -117,11 +131,14 @@ Simple page wrapper for the ClassManagement component.
 ## Integration Points
 
 ### StudentRegistrationForm
+
 Updated to provide two options when no classes exist:
+
 1. **"Manage Classes"** - Navigate to /classes page
 2. **"Quick Seed"** - Create 20 sample classes instantly
 
 ### Dashboard (Future)
+
 Can add quick link to class management from dashboard.
 
 ## Data Model
@@ -129,70 +146,81 @@ Can add quick link to class management from dashboard.
 ```typescript
 interface SchoolClass {
   id: string;
-  name: string;           // e.g., "Primary 1"
-  section?: string;       // e.g., "A", "Science"
-  level: 'nursery' | 'primary' | 'jss' | 'sss';
-  capacity: number;       // Maximum students
+  name: string; // e.g., "Primary 1"
+  section?: string; // e.g., "A", "Science"
+  level: "nursery" | "primary" | "jss" | "sss";
+  capacity: number; // Maximum students
   currentEnrollment: number; // Current students
-  room?: string;          // Physical location
-  academicYear: string;   // e.g., "2025/2026"
-  isActive: boolean;      // Show in registration?
-  teacherId?: string;     // Assigned teacher
+  room?: string; // Physical location
+  academicYear: string; // e.g., "2025/2026"
+  isActive: boolean; // Show in registration?
+  teacherId?: string; // Assigned teacher
 }
 ```
 
 ## Validation Rules
 
 ### Name
+
 - Required
 - Minimum 1 character
 
 ### Level
+
 - Required
 - Must be: nursery, primary, jss, or sss
 
 ### Capacity
+
 - Required
 - Must be ≥ 1
 - Cannot be less than current enrollment (when editing)
 
 ### Academic Year
+
 - Required
 - Suggested format: YYYY/YYYY
 
 ### Section
+
 - Optional
 - Use for multiple sections of same class
 
 ### Room
+
 - Optional
 - Physical location reference
 
 ## Visual Features
 
 ### Level Badges
+
 - **Nursery**: Pink
 - **Primary**: Blue
 - **JSS**: Green
 - **SSS**: Purple
 
 ### Capacity Indicators
+
 - **Green**: < 75% full
 - **Yellow**: 75-89% full
 - **Red**: ≥ 90% full
 
 ### Progress Bars
+
 - Visual representation of enrollment
 - Color matches capacity indicator
 - Shows exact ratio (e.g., 15/30)
 
 ### Empty States
+
 - No classes: Shows "Create First Class" button
 - No search results: Shows "Try adjusting filters"
 
 ## Statistics Dashboard
 
 Displays 4 key metrics:
+
 1. **Total Classes**: Count of all classes
 2. **Total Capacity**: Sum of all capacities
 3. **Enrolled**: Total students enrolled
@@ -201,21 +229,25 @@ Displays 4 key metrics:
 ## Best Practices
 
 ### When to Create Classes
+
 - At the start of academic year
 - When opening new sections
 - When adding new grade levels
 
 ### Naming Conventions
+
 - Use consistent format: "Primary 1", "JSS 2", "SSS 3"
 - Sections: Use A, B, C or Science, Arts, Commercial
 - Room: Use building/block reference
 
 ### Capacity Planning
+
 - Set realistic capacities based on physical space
 - Monitor enrollment percentages
 - Adjust capacity if needed (but not below enrollment)
 
 ### Active Status
+
 - Keep inactive classes for historical data
 - Only active classes appear in student registration
 - Can reactivate classes for new academic year
@@ -223,20 +255,25 @@ Displays 4 key metrics:
 ## Comparison: Dynamic vs Seed Data
 
 ### Seed Data (Quick Start)
+
 **Pros**:
+
 - ✅ One-click setup
 - ✅ 20 pre-configured classes
 - ✅ Good for testing/demo
 - ✅ Covers all levels
 
 **Cons**:
+
 - ❌ Fixed structure
 - ❌ May not match school's needs
 - ❌ Generic names/sections
 - ❌ Can't customize before creation
 
 ### Dynamic Creation (Recommended)
+
 **Pros**:
+
 - ✅ Complete control
 - ✅ Match your school exactly
 - ✅ Create only what you need
@@ -244,10 +281,12 @@ Displays 4 key metrics:
 - ✅ Professional workflow
 
 **Cons**:
+
 - ❌ Takes more time initially
 - ❌ Requires manual entry
 
 ### Best Approach
+
 1. **Option 1**: Start with seed data, then edit classes to match your school
 2. **Option 2**: Create classes manually from scratch (recommended for production)
 3. **Option 3**: Mix - seed data for testing, manual for production
@@ -255,6 +294,7 @@ Displays 4 key metrics:
 ## Future Enhancements
 
 ### Phase 2
+
 - [ ] Bulk class creation
 - [ ] Class templates (duplicate existing class)
 - [ ] Academic year wizard (create all classes for new year)
@@ -262,6 +302,7 @@ Displays 4 key metrics:
 - [ ] Class timetable integration
 
 ### Phase 3
+
 - [ ] Student list per class
 - [ ] Move students between classes
 - [ ] Class reports (enrollment history)
@@ -271,6 +312,7 @@ Displays 4 key metrics:
 ## Screenshots & Examples
 
 ### Empty State
+
 ```
 No classes yet
 
@@ -280,6 +322,7 @@ Get started by creating your first class
 ```
 
 ### Class Card Example
+
 ```
 ┌─────────────────────────────┐
 │ Primary 1 A          [Edit] │
@@ -295,6 +338,7 @@ Get started by creating your first class
 ```
 
 ### Statistics
+
 ```
 [Total Classes: 20] [Capacity: 650] [Enrolled: 485] [Available: 165]
 ```
@@ -302,6 +346,7 @@ Get started by creating your first class
 ## Technical Details
 
 ### Service Integration
+
 ```typescript
 // Create
 await classService.create(classData);
@@ -320,11 +365,13 @@ const active = await classService.getActiveClasses();
 ```
 
 ### Caching
+
 - Service layer caches classes for 3 minutes
 - Automatic cache invalidation after create/update/delete
 - Manual refresh available
 
 ### Error Handling
+
 - Form validation before submission
 - Service-level error handling
 - User-friendly error messages

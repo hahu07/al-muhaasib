@@ -5,6 +5,7 @@ This guide shows you all the different ways to access the Expense Approval Dashb
 ## 🎯 **Multiple Access Points**
 
 ### 1. **📊 Tab Navigation** (Primary Method)
+
 Navigate to: `/expenses` → Click **"Approvals"** tab
 
 ```
@@ -18,6 +19,7 @@ Navigate to: `/expenses` → Click **"Approvals"** tab
 ---
 
 ### 2. **⚡ Quick Header Button** (When Pending)
+
 Navigate to: `/expenses` → Click **"X Pending"** button (top-right)
 
 ```
@@ -32,6 +34,7 @@ Navigate to: `/expenses` → Click **"X Pending"** button (top-right)
 ---
 
 ### 3. **📋 Summary Card Click** (Interactive)
+
 Navigate to: `/expenses` → Click the **"Pending Approval"** summary card
 
 ```
@@ -46,6 +49,7 @@ Navigate to: `/expenses` → Click the **"Pending Approval"** summary card
 ---
 
 ### 4. **🚨 Alert Banner** (Action Required)
+
 Navigate to: `/expenses` → Click **"Review & Approve"** in alert banner
 
 ```
@@ -60,6 +64,7 @@ Navigate to: `/expenses` → Click **"Review & Approve"** in alert banner
 ---
 
 ### 5. **🔗 Direct URL** (Bookmark-able)
+
 Navigate directly to: `/expenses/approvals`
 
 ```
@@ -67,7 +72,8 @@ Navigate directly to: `/expenses/approvals`
 ```
 
 **For:** Admin users only (has access control)  
-**Features:** 
+**Features:**
+
 - Standalone approval dashboard
 - Back button to expenses page
 - Can be bookmarked
@@ -77,6 +83,7 @@ Navigate directly to: `/expenses/approvals`
 ## 🎨 **Visual Guide**
 
 ### Main Expense Page Structure:
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ 🏠 Dashboard   Expense Management      [3 Pending] [+] │ ← Header
@@ -93,7 +100,8 @@ Navigate directly to: `/expenses/approvals`
 ```
 
 ### Access Points Highlighted:
-1. **Tab**: "🔲 Approvals" 
+
+1. **Tab**: "🔲 Approvals"
 2. **Header**: "[3 Pending]"
 3. **Card**: "📋 Pending (clickable)"
 4. **Alert**: "[Review & Approve]"
@@ -103,17 +111,20 @@ Navigate directly to: `/expenses/approvals`
 ## 🔐 **Access Control**
 
 ### ✅ **Admin Users See:**
+
 - All 5 navigation methods
 - Full approval dashboard
 - Approve/reject buttons
 - Bulk operations
 
 ### ❌ **Staff Users See:**
+
 - No approval navigation options
 - Standard expense list only
 - Cannot approve/reject
 
 ### 🛡️ **Protected Routes:**
+
 - `/expenses/approvals` - Admin only
 - Approval dashboard component - Admin only
 - Shows "Access denied" for non-admin users
@@ -123,11 +134,13 @@ Navigate directly to: `/expenses/approvals`
 ## 📱 **Responsive Design**
 
 ### Desktop:
+
 - All navigation options visible
 - Full tab navigation
 - Side-by-side buttons
 
 ### Mobile:
+
 - Tabs may scroll horizontally
 - Stacked header buttons
 - Touch-friendly interactions
@@ -137,19 +150,22 @@ Navigate directly to: `/expenses/approvals`
 ## 🚀 **Quick Start Examples**
 
 ### For Admins with Pending Expenses:
+
 1. **Fastest**: Click the yellow "X Pending" button in header
-2. **Most Info**: Click "Pending Approval" summary card  
+2. **Most Info**: Click "Pending Approval" summary card
 3. **Full Features**: Click "Approvals" tab
 
 ### For Bookmarking:
+
 - Bookmark: `/expenses/approvals` for direct access
 
 ### For Development:
+
 ```tsx
 // Import and use directly
-import { ExpenseApprovalDashboard } from '@/components/expenses';
+import { ExpenseApprovalDashboard } from "@/components/expenses";
 
-<ExpenseApprovalDashboard />
+<ExpenseApprovalDashboard />;
 ```
 
 ---

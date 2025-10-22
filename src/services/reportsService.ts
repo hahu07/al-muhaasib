@@ -1,27 +1,27 @@
-import { 
-  chartOfAccountsService, 
-  journalEntryService, 
-  bankAccountService 
-} from './accountingService';
-import { assetService } from './assetService';
-import { paymentService } from './paymentService';
-import { expenseService } from './expenseService';
-import { combinedStaffService as staffService } from './staffService';
-import type { 
-  ChartOfAccounts, 
-  JournalEntry, 
-  FixedAsset, 
-  Payment, 
+import {
+  chartOfAccountsService,
+  journalEntryService,
+  bankAccountService,
+} from "./accountingService";
+import { assetService } from "./assetService";
+import { paymentService } from "./paymentService";
+import { expenseService } from "./expenseService";
+import { combinedStaffService as staffService } from "./staffService";
+import type {
+  ChartOfAccounts,
+  JournalEntry,
+  FixedAsset,
+  Payment,
   Expense,
-  SalaryPayment 
-} from '@/types';
+  SalaryPayment,
+} from "@/types";
 
 // Report types
 export interface IncomeStatementLine {
   accountCode: string;
   accountName: string;
   amount: number;
-  type: 'revenue' | 'expense';
+  type: "revenue" | "expense";
 }
 
 export interface IncomeStatement {
@@ -40,7 +40,7 @@ export interface BalanceSheetLine {
   accountCode: string;
   accountName: string;
   amount: number;
-  type: 'asset' | 'liability' | 'equity';
+  type: "asset" | "liability" | "equity";
   category: string;
 }
 
@@ -67,7 +67,7 @@ export interface BalanceSheet {
 export interface CashFlowLine {
   description: string;
   amount: number;
-  category: 'operating' | 'investing' | 'financing';
+  category: "operating" | "investing" | "financing";
 }
 
 export interface CashFlowStatement {
@@ -157,106 +157,117 @@ export class ReportsService {
    * Generate Income Statement
    */
   async generateIncomeStatement(
-    startDate: string, 
-    endDate: string
+    startDate: string,
+    endDate: string,
   ): Promise<IncomeStatement> {
-    const journalEntries = await journalEntryService.getByDateRange(startDate, endDate);
-    const postedEntries = journalEntries.filter(e => e.status === 'posted');
-    
+    const journalEntries = await journalEntryService.getByDateRange(
+      startDate,
+      endDate,
+    );
+    const postedEntries = journalEntries.filter((e) => e.status === "posted");
+
     const accounts = await chartOfAccountsService.getActiveAccounts();
-    const accountMap = new Map(accounts.map(a => [a.id, a]));
-    
+    const accountMap = new Map(accounts.map((a) => [a.id, a]));
+
     const balances = new Map<string, number>();
-    
+
     // Calculate account balances from journal entries
-    postedEntries.forEach(entry => {
-      entry.lines.forEach(line => {
+    postedEntries.forEach((entry) => {
+      entry.lines.forEach((line) => {
         const currentBalance = balances.get(line.accountId) || 0;
         const netAmount = line.debit - line.credit;
         balances.set(line.accountId, currentBalance + netAmount);
       });
     });
-    
+
     const revenue: IncomeStatementLine[] = [];
     const expenses: IncomeStatementLine[] = [];
-    
+
     balances.forEach((balance, accountId) => {
       const account = accountMap.get(accountId);
       if (!account || balance === 0) return;
-      
+
       const line: IncomeStatementLine = {
         accountCode: account.accountCode,
         accountName: account.accountName,
         amount: Math.abs(balance),
-        type: account.accountType === 'revenue' ? 'revenue' : 'expense'
+        type: account.accountType === "revenue" ? "revenue" : "expense",
       };
-      
-      if (account.accountType === 'revenue') {
+
+      if (account.accountType === "revenue") {
         // Revenue accounts have credit balances, so we flip the sign
         line.amount = balance * -1;
         revenue.push(line);
-      } else if (account.accountType === 'expense') {
+      } else if (account.accountType === "expense") {
         // Expense accounts have debit balances
         line.amount = balance;
         expenses.push(line);
       }
     });
-    
+
     const totalRevenue = revenue.reduce((sum, r) => sum + r.amount, 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netIncome = totalRevenue - totalExpenses;
-    
+
     return {
       period: `${startDate} to ${endDate}`,
       startDate,
       endDate,
-      revenue: revenue.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-      expenses: expenses.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
+      revenue: revenue.sort((a, b) =>
+        a.accountCode.localeCompare(b.accountCode),
+      ),
+      expenses: expenses.sort((a, b) =>
+        a.accountCode.localeCompare(b.accountCode),
+      ),
       totalRevenue,
       totalExpenses,
       netIncome,
       grossProfit: totalRevenue - totalExpenses, // Simplified for school context
     };
   }
-  
+
   /**
    * Generate Balance Sheet
    */
   async generateBalanceSheet(asOfDate: string): Promise<BalanceSheet> {
     const trialBalance = await journalEntryService.getTrialBalance(asOfDate);
     const accounts = await chartOfAccountsService.getActiveAccounts();
-    const accountMap = new Map(accounts.map(a => [a.accountCode, a]));
-    
+    const accountMap = new Map(accounts.map((a) => [a.accountCode, a]));
+
     const currentAssets: BalanceSheetLine[] = [];
     const fixedAssets: BalanceSheetLine[] = [];
     const currentLiabilities: BalanceSheetLine[] = [];
     const longTermLiabilities: BalanceSheetLine[] = [];
     const equity: BalanceSheetLine[] = [];
-    
-    trialBalance.accounts.forEach(account => {
-      const accountInfo = Array.from(accountMap.values())
-        .find(a => a.accountCode === account.accountCode);
-      
+
+    trialBalance.accounts.forEach((account) => {
+      const accountInfo = Array.from(accountMap.values()).find(
+        (a) => a.accountCode === account.accountCode,
+      );
+
       if (!accountInfo) return;
-      
+
       // Skip revenue and expense accounts (they don't belong on balance sheet)
-      if (accountInfo.accountType === 'revenue' || accountInfo.accountType === 'expense') {
+      if (
+        accountInfo.accountType === "revenue" ||
+        accountInfo.accountType === "expense"
+      ) {
         return;
       }
-      
+
       const balance = account.debit - account.credit;
       if (Math.abs(balance) < 0.01) return; // Skip zero balances
-      
+
       const line: BalanceSheetLine = {
         accountCode: account.accountCode,
         accountName: account.accountName,
         amount: Math.abs(balance),
-        type: accountInfo.accountType as 'asset' | 'liability' | 'equity',
-        category: this.getBalanceSheetCategory(accountInfo.accountCode)
+        type: accountInfo.accountType as "asset" | "liability" | "equity",
+        category: this.getBalanceSheetCategory(accountInfo.accountCode),
       };
-      
+
       switch (accountInfo.accountType) {
-        case 'asset':
+        case "asset":
           if (this.isCurrentAsset(accountInfo.accountCode)) {
             line.amount = balance; // Assets have debit balances
             currentAssets.push(line);
@@ -265,7 +276,7 @@ export class ReportsService {
             fixedAssets.push(line);
           }
           break;
-        case 'liability':
+        case "liability":
           line.amount = balance * -1; // Liabilities have credit balances
           if (this.isCurrentLiability(accountInfo.accountCode)) {
             currentLiabilities.push(line);
@@ -273,177 +284,233 @@ export class ReportsService {
             longTermLiabilities.push(line);
           }
           break;
-        case 'equity':
+        case "equity":
           line.amount = balance * -1; // Equity has credit balance
           equity.push(line);
           break;
       }
     });
-    
-    const totalAssets = [...currentAssets, ...fixedAssets]
-      .reduce((sum, a) => sum + a.amount, 0);
-    const totalLiabilities = [...currentLiabilities, ...longTermLiabilities]
-      .reduce((sum, l) => sum + l.amount, 0);
+
+    const totalAssets = [...currentAssets, ...fixedAssets].reduce(
+      (sum, a) => sum + a.amount,
+      0,
+    );
+    const totalLiabilities = [
+      ...currentLiabilities,
+      ...longTermLiabilities,
+    ].reduce((sum, l) => sum + l.amount, 0);
     const totalEquity = equity.reduce((sum, e) => sum + e.amount, 0);
-    
+
     return {
       asOfDate,
       assets: {
-        currentAssets: currentAssets.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-        fixedAssets: fixedAssets.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-        totalAssets
+        currentAssets: currentAssets.sort((a, b) =>
+          a.accountCode.localeCompare(b.accountCode),
+        ),
+        fixedAssets: fixedAssets.sort((a, b) =>
+          a.accountCode.localeCompare(b.accountCode),
+        ),
+        totalAssets,
       },
       liabilities: {
-        currentLiabilities: currentLiabilities.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-        longTermLiabilities: longTermLiabilities.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-        totalLiabilities
+        currentLiabilities: currentLiabilities.sort((a, b) =>
+          a.accountCode.localeCompare(b.accountCode),
+        ),
+        longTermLiabilities: longTermLiabilities.sort((a, b) =>
+          a.accountCode.localeCompare(b.accountCode),
+        ),
+        totalLiabilities,
       },
       equity: {
-        equity: equity.sort((a, b) => a.accountCode.localeCompare(b.accountCode)),
-        totalEquity
+        equity: equity.sort((a, b) =>
+          a.accountCode.localeCompare(b.accountCode),
+        ),
+        totalEquity,
       },
       totalLiabilitiesAndEquity: totalLiabilities + totalEquity,
-      isBalanced: Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01
+      isBalanced:
+        Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01,
     };
   }
-  
+
   /**
    * Generate Cash Flow Statement
    */
   async generateCashFlowStatement(
-    startDate: string, 
-    endDate: string
+    startDate: string,
+    endDate: string,
   ): Promise<CashFlowStatement> {
-    // Get beginning cash balance
-    const beginningDate = new Date(startDate);
-    beginningDate.setDate(beginningDate.getDate() - 1);
-    const beginningBalanceDate = beginningDate.toISOString().split('T')[0];
-    
-    const beginningTrialBalance = await journalEntryService.getTrialBalance(beginningBalanceDate);
-    const endingTrialBalance = await journalEntryService.getTrialBalance(endDate);
-    
-    const beginningCash = this.getCashFromTrialBalance(beginningTrialBalance);
-    const endingCash = this.getCashFromTrialBalance(endingTrialBalance);
-    
-    // Get all transactions in the period
-    const payments = await paymentService.getPaymentsByDateRange(startDate, endDate);
-    const expenses = await expenseService.getExpensesByDateRange(startDate, endDate);
-    const salaryPayments = await staffService.getSalaryPaymentsByDateRange(startDate, endDate);
-    
-    const operatingActivities: CashFlowLine[] = [];
-    const investingActivities: CashFlowLine[] = [];
-    const financingActivities: CashFlowLine[] = [];
-    
-    // Operating Activities - Student fee collections
-    payments.forEach(payment => {
-      operatingActivities.push({
-        description: `Student fee collection - ${payment.studentName || 'Unknown'}`,
-        amount: payment.amount,
-        category: 'operating'
-      });
-    });
-    
-    // Operating Activities - Operating expenses
-    expenses.filter(exp => exp.status === 'paid').forEach(expense => {
-      if (this.isOperatingExpense(expense.category)) {
-        operatingActivities.push({
-          description: `${expense.description}`,
-          amount: -expense.amount,
-          category: 'operating'
+    try {
+      // Get beginning cash balance
+      const beginningDate = new Date(startDate);
+      beginningDate.setDate(beginningDate.getDate() - 1);
+      const beginningBalanceDate = beginningDate.toISOString().split("T")[0];
+
+      const beginningTrialBalance =
+        await journalEntryService.getTrialBalance(beginningBalanceDate);
+      const endingTrialBalance =
+        await journalEntryService.getTrialBalance(endDate);
+
+      const beginningCash = this.getCashFromTrialBalance(beginningTrialBalance);
+      const endingCash = this.getCashFromTrialBalance(endingTrialBalance);
+
+      // Get journal entries for the period to analyze cash flows
+      const journalEntries = await journalEntryService.getByDateRange(
+        startDate,
+        endDate,
+      );
+      const postedEntries = journalEntries.filter((e) => e.status === "posted");
+
+      const operatingActivities: CashFlowLine[] = [];
+      const investingActivities: CashFlowLine[] = [];
+      const financingActivities: CashFlowLine[] = [];
+
+      // Analyze journal entries to categorize cash flows
+      postedEntries.forEach((entry) => {
+        entry.lines.forEach((line) => {
+          // Skip if accountCode is missing (old entries)
+          if (!line.accountCode) return;
+
+          // Check if this line involves cash/bank accounts
+          const isCashAccount =
+            line.accountCode.startsWith("111") ||
+            line.accountCode.startsWith("112");
+          if (!isCashAccount) return;
+
+          const cashFlow = line.debit - line.credit; // Positive = cash inflow, Negative = cash outflow
+          if (Math.abs(cashFlow) < 0.01) return;
+
+          // Categorize based on reference type or account codes
+          if (entry.referenceType === "payment") {
+            operatingActivities.push({
+              description: entry.description || "Revenue collection",
+              amount: cashFlow,
+              category: "operating",
+            });
+          } else if (entry.referenceType === "expense") {
+            operatingActivities.push({
+              description: entry.description || "Operating expense",
+              amount: cashFlow,
+              category: "operating",
+            });
+          } else if (entry.referenceType === "salary") {
+            operatingActivities.push({
+              description: entry.description || "Salary payment",
+              amount: cashFlow,
+              category: "operating",
+            });
+          } else if (line.accountCode.startsWith("12")) {
+            // Fixed asset related
+            investingActivities.push({
+              description: entry.description || "Asset purchase",
+              amount: cashFlow,
+              category: "investing",
+            });
+          } else {
+            operatingActivities.push({
+              description: entry.description || "Other transaction",
+              amount: cashFlow,
+              category: "operating",
+            });
+          }
         });
-      } else if (this.isCapitalExpense(expense.category)) {
-        investingActivities.push({
-          description: `Capital expense - ${expense.description}`,
-          amount: -expense.amount,
-          category: 'investing'
-        });
-      }
-    });
-    
-    // Operating Activities - Salary payments
-    salaryPayments.forEach(salary => {
-      operatingActivities.push({
-        description: `Salary payment - ${salary.staffName || 'Staff'}`,
-        amount: -salary.netPay,
-        category: 'operating'
       });
-    });
-    
-    const netOperatingCash = operatingActivities.reduce((sum, a) => sum + a.amount, 0);
-    const netInvestingCash = investingActivities.reduce((sum, a) => sum + a.amount, 0);
-    const netFinancingCash = financingActivities.reduce((sum, a) => sum + a.amount, 0);
-    const netCashFlow = netOperatingCash + netInvestingCash + netFinancingCash;
-    
-    return {
-      period: `${startDate} to ${endDate}`,
-      startDate,
-      endDate,
-      operatingActivities,
-      investingActivities,
-      financingActivities,
-      netOperatingCash,
-      netInvestingCash,
-      netFinancingCash,
-      netCashFlow,
-      beginningCash,
-      endingCash
-    };
+
+      const netOperatingCash = operatingActivities.reduce(
+        (sum, a) => sum + a.amount,
+        0,
+      );
+      const netInvestingCash = investingActivities.reduce(
+        (sum, a) => sum + a.amount,
+        0,
+      );
+      const netFinancingCash = financingActivities.reduce(
+        (sum, a) => sum + a.amount,
+        0,
+      );
+      const netCashFlow =
+        netOperatingCash + netInvestingCash + netFinancingCash;
+
+      return {
+        period: `${startDate} to ${endDate}`,
+        startDate,
+        endDate,
+        operatingActivities,
+        investingActivities,
+        financingActivities,
+        netOperatingCash,
+        netInvestingCash,
+        netFinancingCash,
+        netCashFlow,
+        beginningCash,
+        endingCash,
+      };
+    } catch (error) {
+      console.error("Error generating cash flow statement:", error);
+      throw new Error(
+        `Failed to generate cash flow statement: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
-  
+
   /**
    * Generate Trial Balance
    */
   async generateTrialBalance(asOfDate?: string): Promise<TrialBalance> {
     const trialBalance = await journalEntryService.getTrialBalance(asOfDate);
     const accounts = await chartOfAccountsService.getActiveAccounts();
-    const accountMap = new Map(accounts.map(a => [a.accountCode, a]));
-    
-    const trialBalanceLines: TrialBalanceLine[] = trialBalance.accounts.map(account => {
-      const accountInfo = Array.from(accountMap.values())
-        .find(a => a.accountCode === account.accountCode);
-      
-      return {
-        accountCode: account.accountCode,
-        accountName: account.accountName,
-        debit: account.debit,
-        credit: account.credit,
-        balance: account.debit - account.credit,
-        accountType: accountInfo?.accountType || 'unknown'
-      };
-    }).sort((a, b) => a.accountCode.localeCompare(b.accountCode));
-    
+    const accountMap = new Map(accounts.map((a) => [a.accountCode, a]));
+
+    const trialBalanceLines: TrialBalanceLine[] = trialBalance.accounts
+      .map((account) => {
+        const accountInfo = Array.from(accountMap.values()).find(
+          (a) => a.accountCode === account.accountCode,
+        );
+
+        return {
+          accountCode: account.accountCode,
+          accountName: account.accountName,
+          debit: account.debit,
+          credit: account.credit,
+          balance: account.debit - account.credit,
+          accountType: accountInfo?.accountType || "unknown",
+        };
+      })
+      .sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
     return {
-      asOfDate: asOfDate || new Date().toISOString().split('T')[0],
+      asOfDate: asOfDate || new Date().toISOString().split("T")[0],
       accounts: trialBalanceLines,
       totalDebit: trialBalance.totalDebit,
       totalCredit: trialBalance.totalCredit,
-      isBalanced: trialBalance.isBalanced
+      isBalanced: trialBalance.isBalanced,
     };
   }
-  
+
   /**
    * Generate Asset Register
    */
   async generateAssetRegister(asOfDate?: string): Promise<AssetRegister> {
     const assets = await assetService.fixedAssetService.list();
-    const activeAssets = assets.filter(a => a.status === 'active');
-    
+    const activeAssets = assets.filter((a) => a.status === "active");
+
     const assetLines: AssetRegisterLine[] = [];
     let totalPurchaseCost = 0;
     let totalAccumulatedDepreciation = 0;
-    
+
     const byCategoryCount: Record<string, number> = {};
     const byCategoryValue: Record<string, number> = {};
-    
+
     for (const asset of activeAssets) {
-      const accumulatedDepreciation = await this.calculateAccumulatedDepreciation(
-        asset, 
-        asOfDate || new Date().toISOString().split('T')[0]
-      );
-      
+      const accumulatedDepreciation =
+        await this.calculateAccumulatedDepreciation(
+          asset,
+          asOfDate || new Date().toISOString().split("T")[0],
+        );
+
       const purchaseCost = Number(asset.purchasePrice);
       const bookValue = purchaseCost - accumulatedDepreciation;
-      
+
       const line: AssetRegisterLine = {
         assetName: String(asset.assetName),
         assetTag: String(asset.assetCode),
@@ -454,58 +521,64 @@ export class ReportsService {
         bookValue,
         depreciationMethod: String(asset.depreciationMethod),
         usefulLife: Number(asset.usefulLifeYears),
-        location: String(asset.location || ''),
-        condition: String(asset.condition || 'good'),
-        status: String(asset.status)
+        location: String(asset.location || ""),
+        condition: String(asset.condition || "good"),
+        status: String(asset.status),
       };
-      
+
       assetLines.push(line);
       totalPurchaseCost += purchaseCost;
       totalAccumulatedDepreciation += accumulatedDepreciation;
-      
-      byCategoryCount[asset.category] = (byCategoryCount[asset.category] || 0) + 1;
-      byCategoryValue[asset.category] = (byCategoryValue[asset.category] || 0) + bookValue;
+
+      byCategoryCount[asset.category] =
+        (byCategoryCount[asset.category] || 0) + 1;
+      byCategoryValue[asset.category] =
+        (byCategoryValue[asset.category] || 0) + bookValue;
     }
-    
+
     return {
-      asOfDate: asOfDate || new Date().toISOString().split('T')[0],
+      asOfDate: asOfDate || new Date().toISOString().split("T")[0],
       assets: assetLines.sort((a, b) => a.assetTag.localeCompare(b.assetTag)),
       totalPurchaseCost,
       totalAccumulatedDepreciation,
       totalBookValue: totalPurchaseCost - totalAccumulatedDepreciation,
       assetCount: assetLines.length,
       byCategoryCount,
-      byCategoryValue
+      byCategoryValue,
     };
   }
-  
+
   /**
    * Generate Depreciation Schedule
    */
   async generateDepreciationSchedule(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<DepreciationSchedule> {
     const assets = await assetService.fixedAssetService.list();
-    const depreciableAssets = assets.filter(a => 
-      a.status === 'active' && 
-      a.depreciationMethod !== 'none'
+    const depreciableAssets = assets.filter(
+      (a) => a.status === "active" && a.depreciationMethod !== "none",
     );
-    
+
     const assetLines: DepreciationScheduleLine[] = [];
     let totalMonthlyDepreciation = 0;
     let totalAccumulatedDepreciation = 0;
     let totalBookValue = 0;
-    
+
     for (const asset of depreciableAssets) {
       const monthlyDepreciation = this.calculateMonthlyDepreciation(asset);
-      const accumulatedDepreciation = await this.calculateAccumulatedDepreciation(asset, endDate);
-      const depreciationThisMonth = this.calculateDepreciationForPeriod(asset, startDate, endDate);
+      const accumulatedDepreciation =
+        await this.calculateAccumulatedDepreciation(asset, endDate);
+      const depreciationThisMonth = this.calculateDepreciationForPeriod(
+        asset,
+        startDate,
+        endDate,
+      );
       const depreciationYTD = this.calculateDepreciationYTD(asset, endDate);
-      
+
       const purchaseCost = Number(asset.purchasePrice);
       const bookValue = purchaseCost - accumulatedDepreciation;
-      
+
       const line: DepreciationScheduleLine = {
         assetName: String(asset.assetName),
         assetTag: String(asset.assetCode),
@@ -517,15 +590,15 @@ export class ReportsService {
         accumulatedDepreciation,
         bookValue,
         depreciationThisMonth,
-        depreciationYTD
+        depreciationYTD,
       };
-      
+
       assetLines.push(line);
       totalMonthlyDepreciation += monthlyDepreciation;
       totalAccumulatedDepreciation += accumulatedDepreciation;
       totalBookValue += bookValue;
     }
-    
+
     return {
       period: `${startDate} to ${endDate}`,
       startDate,
@@ -533,102 +606,132 @@ export class ReportsService {
       assets: assetLines.sort((a, b) => a.assetTag.localeCompare(b.assetTag)),
       totalMonthlyDepreciation,
       totalAccumulatedDepreciation,
-      totalBookValue
+      totalBookValue,
     };
   }
-  
+
   // Helper methods
   private getBalanceSheetCategory(accountCode: string): string {
     const code = accountCode.substring(0, 2);
     switch (code) {
-      case '11': return 'Current Assets';
-      case '12': return 'Fixed Assets';
-      case '21': return 'Current Liabilities';
-      case '22': return 'Long-term Liabilities';
-      case '31': return 'Equity';
-      default: return 'Other';
+      case "11":
+        return "Current Assets";
+      case "12":
+        return "Fixed Assets";
+      case "21":
+        return "Current Liabilities";
+      case "22":
+        return "Long-term Liabilities";
+      case "31":
+        return "Equity";
+      default:
+        return "Other";
     }
   }
-  
+
   private isCurrentAsset(accountCode: string): boolean {
-    return accountCode.startsWith('11');
+    return accountCode.startsWith("11");
   }
-  
+
   private isCurrentLiability(accountCode: string): boolean {
-    return accountCode.startsWith('21');
+    return accountCode.startsWith("21");
   }
-  
+
   private getCashFromTrialBalance(trialBalance: {
     accounts: { accountCode: string; debit: number; credit: number }[];
   }): number {
-    const cashAccounts = trialBalance.accounts.filter(a => 
-      a.accountCode.startsWith('111') || a.accountCode.startsWith('112')
+    const cashAccounts = trialBalance.accounts.filter(
+      (a) =>
+        a.accountCode &&
+        (a.accountCode.startsWith("111") || a.accountCode.startsWith("112")),
     );
     return cashAccounts.reduce((sum, a) => sum + (a.debit - a.credit), 0);
   }
-  
+
   private isOperatingExpense(category: string): boolean {
     const operatingCategories = [
-      'utilities', 'maintenance', 'supplies', 'salaries', 
-      'administrative', 'marketing', 'insurance'
+      "utilities",
+      "maintenance",
+      "supplies",
+      "salaries",
+      "administrative",
+      "marketing",
+      "insurance",
     ];
     return operatingCategories.includes(category.toLowerCase());
   }
-  
+
   private isCapitalExpense(category: string): boolean {
     const capitalCategories = [
-      'equipment', 'buildings', 'furniture', 'technology', 'vehicles'
+      "equipment",
+      "buildings",
+      "furniture",
+      "technology",
+      "vehicles",
     ];
     return capitalCategories.includes(category.toLowerCase());
   }
-  
+
   private calculateMonthlyDepreciation(asset: FixedAsset): number {
-    if (asset.depreciationMethod === 'straight-line') {
+    if (asset.depreciationMethod === "straight-line") {
       return Number(asset.purchasePrice) / (asset.usefulLifeYears * 12);
     }
     return 0;
   }
-  
-  private async calculateAccumulatedDepreciation(asset: FixedAsset, asOfDate: string): Promise<number> {
+
+  private async calculateAccumulatedDepreciation(
+    asset: FixedAsset,
+    asOfDate: string,
+  ): Promise<number> {
     const purchaseDate = new Date(asset.purchaseDate);
     const asOf = new Date(asOfDate);
-    
-    const monthsElapsed = Math.max(0, 
-      (asOf.getFullYear() - purchaseDate.getFullYear()) * 12 + 
-      (asOf.getMonth() - purchaseDate.getMonth())
+
+    const monthsElapsed = Math.max(
+      0,
+      (asOf.getFullYear() - purchaseDate.getFullYear()) * 12 +
+        (asOf.getMonth() - purchaseDate.getMonth()),
     );
-    
+
     const monthlyDepreciation = this.calculateMonthlyDepreciation(asset);
     const totalDepreciation = monthsElapsed * monthlyDepreciation;
-    
+
     // Cap at purchase cost
     return Math.min(totalDepreciation, Number(asset.purchasePrice));
   }
-  
-  private calculateDepreciationForPeriod(asset: FixedAsset, startDate: string, endDate: string): number {
+
+  private calculateDepreciationForPeriod(
+    asset: FixedAsset,
+    startDate: string,
+    endDate: string,
+  ): number {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const purchaseDate = new Date(asset.purchaseDate);
-    
+
     if (purchaseDate > end) return 0;
-    
+
     const effectiveStart = purchaseDate > start ? purchaseDate : start;
-    const monthsInPeriod = Math.max(0,
-      (end.getFullYear() - effectiveStart.getFullYear()) * 12 + 
-      (end.getMonth() - effectiveStart.getMonth()) + 1
+    const monthsInPeriod = Math.max(
+      0,
+      (end.getFullYear() - effectiveStart.getFullYear()) * 12 +
+        (end.getMonth() - effectiveStart.getMonth()) +
+        1,
     );
-    
+
     return monthsInPeriod * this.calculateMonthlyDepreciation(asset);
   }
-  
-  private calculateDepreciationYTD(asset: FixedAsset, asOfDate: string): number {
+
+  private calculateDepreciationYTD(
+    asset: FixedAsset,
+    asOfDate: string,
+  ): number {
     const asOf = new Date(asOfDate);
     const yearStart = new Date(asOf.getFullYear(), 0, 1);
-    
+
     return this.calculateDepreciationForPeriod(
-      asset, 
-      yearStart.toISOString().split('T')[0], 
-      asOfDate
+      asset,
+      yearStart.toISOString().split("T")[0],
+      asOfDate,
     );
   }
 }

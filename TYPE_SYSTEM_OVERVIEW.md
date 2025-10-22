@@ -9,6 +9,7 @@ The type system has been completely restructured to support comprehensive school
 ## 📊 Type System Structure
 
 ### 1. **School Structure** (Classes & Students)
+
 - **SchoolClass**: Classes organized by level (nursery, primary, JSS, SSS)
   - Tracks capacity and current enrollment
   - Academic year and term-based
@@ -26,6 +27,7 @@ The type system has been completely restructured to support comprehensive school
 ### 2. **Revenue Side** (Fees & Payments)
 
 #### Fee Structure
+
 - **FeeCategory**: Define fee types (tuition, uniform, feeding, transport, etc.)
 - **FeeStructure**: Fee structure per class, term, and academic year
   - Contains multiple FeeItems
@@ -37,6 +39,7 @@ The type system has been completely restructured to support comprehensive school
   - Due dates
 
 #### Payments
+
 - **Payment**: Payment records with full audit trail
   - Multiple payment methods (cash, bank_transfer, POS, online, cheque)
   - **PaymentAllocation**: Breaks down which fees the payment covers
@@ -48,6 +51,7 @@ The type system has been completely restructured to support comprehensive school
 ### 3. **Expense Side** (Operational Expenses)
 
 #### Operational Expenses
+
 - **ExpenseCategory**: 25+ expense categories including:
   - **Staff**: salaries, allowances, bonuses, training
   - **Operations**: utilities, maintenance, repairs, cleaning, security
@@ -90,6 +94,7 @@ The type system has been completely restructured to support comprehensive school
 ### 5. **Capital Expenditure & Asset Management** 🆕
 
 #### Fixed Assets
+
 - **FixedAsset**: Complete asset register
   - Asset code (unique tag)
   - 20+ asset categories (land, buildings, furniture, equipment, vehicles, etc.)
@@ -110,6 +115,7 @@ The type system has been completely restructured to support comprehensive school
   - Serial numbers and specifications
 
 #### Capital Expenditure
+
 - **CapitalExpenditure**: CapEx project tracking
   - Budget vs actual
   - Payment status (installments supported)
@@ -121,6 +127,7 @@ The type system has been completely restructured to support comprehensive school
   - Document management
 
 #### Asset Operations
+
 - **DepreciationEntry**: Automatic depreciation calculations
   - Monthly or annual
   - Links to journal entries
@@ -183,32 +190,40 @@ The type system has been completely restructured to support comprehensive school
 ## 🎯 Key Improvements
 
 ### 1. **Name Separation**
+
 ✅ All names now split into `surname`, `firstname`, `middlename`
+
 - Students
-- Guardians  
+- Guardians
 - Staff
 - Users
 
 ### 2. **Class-Based Student Organization**
+
 ✅ Students are now properly organized by classes
+
 - Each student has `classId` reference
 - Classes have capacity and enrollment tracking
 - Easy to filter students by class
 
 ### 3. **Multiple Fee Types**
+
 ✅ Flexible fee structure supporting:
+
 - Tuition, uniform, feeding, transport, books
 - Sports, development, examination, PTA
 - Computer, library, laboratory, lessons
 - Custom "other" category
 
 ### 4. **Comprehensive Expense Management**
+
 ✅ 25+ expense categories covering all school operations
 ✅ Budget allocation and variance tracking
 ✅ Approval workflows
 ✅ Vendor management
 
 ### 5. **Complete CapEx & Asset Management**
+
 ✅ Full asset lifecycle tracking
 ✅ Depreciation automation
 ✅ Maintenance scheduling
@@ -216,6 +231,7 @@ The type system has been completely restructured to support comprehensive school
 ✅ Asset revaluation
 
 ### 6. **Double-Entry Accounting**
+
 ✅ Proper journal entries
 ✅ Chart of accounts
 ✅ Auto-balanced entries
@@ -230,42 +246,42 @@ Update your `dataService.ts` COLLECTIONS to include:
 ```typescript
 export const COLLECTIONS = {
   // School Structure
-  CLASSES: 'classes',
-  STUDENTS: 'students',
-  
+  CLASSES: "classes",
+  STUDENTS: "students",
+
   // Revenue
-  FEE_CATEGORIES: 'fee_categories',
-  FEE_STRUCTURES: 'fee_structures',
-  STUDENT_FEE_ASSIGNMENTS: 'student_fee_assignments',
-  PAYMENTS: 'payments',
-  
+  FEE_CATEGORIES: "fee_categories",
+  FEE_STRUCTURES: "fee_structures",
+  STUDENT_FEE_ASSIGNMENTS: "student_fee_assignments",
+  PAYMENTS: "payments",
+
   // Expenses
-  EXPENSE_CATEGORIES: 'expense_categories',
-  EXPENSES: 'expenses',
-  BUDGETS: 'budgets',
-  
+  EXPENSE_CATEGORIES: "expense_categories",
+  EXPENSES: "expenses",
+  BUDGETS: "budgets",
+
   // Staff
-  STAFF_MEMBERS: 'staff_members',
-  SALARY_PAYMENTS: 'salary_payments',
-  
+  STAFF_MEMBERS: "staff_members",
+  SALARY_PAYMENTS: "salary_payments",
+
   // Assets & CapEx
-  FIXED_ASSETS: 'fixed_assets',
-  CAPITAL_EXPENDITURES: 'capital_expenditures',
-  DEPRECIATION_ENTRIES: 'depreciation_entries',
-  ASSET_MAINTENANCE: 'asset_maintenance',
-  ASSET_DISPOSALS: 'asset_disposals',
-  ASSET_VALUATIONS: 'asset_valuations',
-  
+  FIXED_ASSETS: "fixed_assets",
+  CAPITAL_EXPENDITURES: "capital_expenditures",
+  DEPRECIATION_ENTRIES: "depreciation_entries",
+  ASSET_MAINTENANCE: "asset_maintenance",
+  ASSET_DISPOSALS: "asset_disposals",
+  ASSET_VALUATIONS: "asset_valuations",
+
   // Accounting
-  CHART_OF_ACCOUNTS: 'chart_of_accounts',
-  JOURNAL_ENTRIES: 'journal_entries',
-  BANK_ACCOUNTS: 'bank_accounts',
-  
+  CHART_OF_ACCOUNTS: "chart_of_accounts",
+  JOURNAL_ENTRIES: "journal_entries",
+  BANK_ACCOUNTS: "bank_accounts",
+
   // Users
-  USERS: 'users',
-  
+  USERS: "users",
+
   // Reports
-  FINANCIAL_REPORTS: 'financial_reports',
+  FINANCIAL_REPORTS: "financial_reports",
 } as const;
 ```
 

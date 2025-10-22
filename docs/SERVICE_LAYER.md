@@ -9,7 +9,9 @@ The Al-Muhaasib service layer provides a comprehensive, type-safe API for managi
 ### Base Services
 
 #### `BaseDataService<T>`
+
 Generic CRUD service with caching support:
+
 - `create(data)` - Create new record
 - `getById(id)` - Get single record with caching
 - `list(filter?)` - List all records with optional filtering
@@ -28,6 +30,7 @@ Generic CRUD service with caching support:
 Manages school classes and enrollment.
 
 **Methods:**
+
 - `getByAcademicYear(year)` - Get classes for academic year
 - `getByLevel(level)` - Get classes by level (nursery/primary/jss/sss)
 - `getClassesWithCapacity()` - Get classes with available slots
@@ -37,11 +40,12 @@ Manages school classes and enrollment.
 - `getEnrollmentStats()` - Get enrollment statistics
 
 **Example:**
+
 ```typescript
-import { classService } from '@/services';
+import { classService } from "@/services";
 
 // Get classes for current academic year
-const classes = await classService.getByAcademicYear('2024/2025');
+const classes = await classService.getByAcademicYear("2024/2025");
 
 // Get enrollment stats
 const stats = await classService.getEnrollmentStats();
@@ -57,16 +61,20 @@ console.log(`Utilization: ${stats.utilizationRate}%`);
 Three services for comprehensive fee management:
 
 #### FeeCategoryService
+
 Manage fee categories (tuition, uniforms, feeding, etc.)
 
 **Methods:**
+
 - `getActiveFeeCategories()` - Get active categories
 - `getByType(type)` - Get categories by type
 
 #### FeeStructureService
+
 Define fee structures per class and term
 
 **Methods:**
+
 - `createFeeStructure(data)` - Create with automatic total calculation
 - `updateFeeStructure(id, data)` - Update with recalculation
 - `getByClassAndTerm(classId, year, term)` - Get specific structure
@@ -74,9 +82,11 @@ Define fee structures per class and term
 - `cloneFeeStructure(sourceId, targetClassId, year, term)` - Clone to another class
 
 #### StudentFeeAssignmentService
+
 Assign and track fees per student
 
 **Methods:**
+
 - `assignFeesToStudent(...)` - Assign fees to student
 - `getByStudentId(studentId)` - Get student's fee assignments
 - `getByClassAndTerm(classId, year, term)` - Get assignments for class
@@ -85,43 +95,52 @@ Assign and track fees per student
 - `getPaymentSummary(year, term)` - Get payment summary
 
 **Example:**
+
 ```typescript
-import { feeStructureService, studentFeeAssignmentService } from '@/services';
+import { feeStructureService, studentFeeAssignmentService } from "@/services";
 
 // Create fee structure for a class
 const structure = await feeStructureService.createFeeStructure({
-  classId: 'class123',
-  className: 'JSS 1A',
-  academicYear: '2024/2025',
-  term: 'first',
+  classId: "class123",
+  className: "JSS 1A",
+  academicYear: "2024/2025",
+  term: "first",
   feeItems: [
-    { categoryId: 'cat1', categoryName: 'Tuition', type: 'tuition', amount: 50000, isMandatory: true },
-    { categoryId: 'cat2', categoryName: 'Uniform', type: 'uniform', amount: 15000, isMandatory: true }
+    {
+      categoryId: "cat1",
+      categoryName: "Tuition",
+      type: "tuition",
+      amount: 50000,
+      isMandatory: true,
+    },
+    {
+      categoryId: "cat2",
+      categoryName: "Uniform",
+      type: "uniform",
+      amount: 15000,
+      isMandatory: true,
+    },
   ],
-  isActive: true
+  isActive: true,
 });
 
 // Assign fees to a student
 const assignment = await studentFeeAssignmentService.assignFeesToStudent(
-  'student123',
-  'John Doe',
-  'class123',
-  'JSS 1A',
+  "student123",
+  "John Doe",
+  "class123",
+  "JSS 1A",
   structure.id,
-  '2024/2025',
-  'first',
-  structure.feeItems
+  "2024/2025",
+  "first",
+  structure.feeItems,
 );
 
 // Record payment
-await studentFeeAssignmentService.recordPayment(
-  assignment.id,
-  30000,
-  [
-    { categoryId: 'cat1', amount: 25000 },
-    { categoryId: 'cat2', amount: 5000 }
-  ]
-);
+await studentFeeAssignmentService.recordPayment(assignment.id, 30000, [
+  { categoryId: "cat1", amount: 25000 },
+  { categoryId: "cat2", amount: 5000 },
+]);
 ```
 
 ### 3. EnhancedPaymentService (`paymentService.ts`)
@@ -129,6 +148,7 @@ await studentFeeAssignmentService.recordPayment(
 Comprehensive payment processing and analytics.
 
 **Methods:**
+
 - `recordPayment(data)` - Record payment with automatic reference generation
 - `getByStudentId(studentId)` - Get student's payments
 - `getByDateRange(start, end)` - Get payments in date range
@@ -140,30 +160,41 @@ Comprehensive payment processing and analytics.
 - `generateReceipt(paymentId)` - Generate receipt data
 
 **Example:**
+
 ```typescript
-import { enhancedPaymentService } from '@/services';
+import { enhancedPaymentService } from "@/services";
 
 // Record a payment
 const payment = await enhancedPaymentService.recordPayment({
-  studentId: 'student123',
-  studentName: 'John Doe',
-  classId: 'class123',
-  className: 'JSS 1A',
-  feeAssignmentId: 'assignment123',
+  studentId: "student123",
+  studentName: "John Doe",
+  classId: "class123",
+  className: "JSS 1A",
+  feeAssignmentId: "assignment123",
   amount: 30000,
-  paymentMethod: 'bank_transfer',
-  paymentDate: '2024-10-12',
+  paymentMethod: "bank_transfer",
+  paymentDate: "2024-10-12",
   feeAllocations: [
-    { categoryId: 'cat1', categoryName: 'Tuition', type: 'tuition', amount: 25000 },
-    { categoryId: 'cat2', categoryName: 'Uniform', type: 'uniform', amount: 5000 }
+    {
+      categoryId: "cat1",
+      categoryName: "Tuition",
+      type: "tuition",
+      amount: 25000,
+    },
+    {
+      categoryId: "cat2",
+      categoryName: "Uniform",
+      type: "uniform",
+      amount: 5000,
+    },
   ],
-  recordedBy: 'user123'
+  recordedBy: "user123",
 });
 
 // Get analytics
 const analytics = await enhancedPaymentService.getPaymentAnalytics(
-  '2024-01-01',
-  '2024-12-31'
+  "2024-01-01",
+  "2024-12-31",
 );
 console.log(`Total revenue: ₦${analytics.totalAmount.toLocaleString()}`);
 console.log(`Average payment: ₦${analytics.averagePayment.toLocaleString()}`);
@@ -176,9 +207,11 @@ console.log(`Average payment: ₦${analytics.averagePayment.toLocaleString()}`);
 ### 4. Expense Services (`expenseService.ts`)
 
 #### ExpenseService
+
 Record and track operational expenses
 
 **Methods:**
+
 - `createExpense(data)` - Create expense with auto reference
 - `getByStatus(status)` - Filter by status (pending/approved/paid)
 - `getByCategory(category)` - Filter by expense category
@@ -190,9 +223,11 @@ Record and track operational expenses
 - `getPendingApprovals()` - Get pending approvals
 
 #### BudgetService
+
 Budget planning and tracking
 
 **Methods:**
+
 - `createBudget(data)` - Create budget with auto calculations
 - `getByAcademicYearAndTerm(year, term?)` - Get budget for period
 - `approveBudget(budgetId, approvedBy)` - Approve budget
@@ -202,32 +237,33 @@ Budget planning and tracking
 - `checkBudgetAvailability(year, categoryId, amount, term?)` - Check budget
 
 **Example:**
+
 ```typescript
-import { expenseService, budgetService } from '@/services';
+import { expenseService, budgetService } from "@/services";
 
 // Create expense
 const expense = await expenseService.createExpense({
-  categoryId: 'cat1',
-  categoryName: 'Utilities',
-  category: 'utilities',
+  categoryId: "cat1",
+  categoryName: "Utilities",
+  category: "utilities",
   amount: 25000,
-  description: 'Electricity bill for September',
-  paymentMethod: 'bank_transfer',
-  paymentDate: '2024-09-30',
-  vendorName: 'Power Company',
-  recordedBy: 'user123'
+  description: "Electricity bill for September",
+  paymentMethod: "bank_transfer",
+  paymentDate: "2024-09-30",
+  vendorName: "Power Company",
+  recordedBy: "user123",
 });
 
 // Check budget before approval
 const budgetCheck = await budgetService.checkBudgetAvailability(
-  '2024/2025',
-  'cat1',
+  "2024/2025",
+  "cat1",
   25000,
-  'first'
+  "first",
 );
 
 if (budgetCheck.available) {
-  await expenseService.approveExpense(expense.id, 'admin123');
+  await expenseService.approveExpense(expense.id, "admin123");
 }
 ```
 
@@ -238,9 +274,11 @@ if (budgetCheck.available) {
 ### 5. Staff Services (`staffService.ts`)
 
 #### StaffService
+
 Manage staff members
 
 **Methods:**
+
 - `getActiveStaff()` - Get active staff
 - `getByEmploymentType(type)` - Filter by employment type
 - `getByDepartment(dept)` - Filter by department
@@ -250,9 +288,11 @@ Manage staff members
 - `getStaffSummary()` - Get staff statistics
 
 #### SalaryPaymentService
+
 Process and track salary payments
 
 **Methods:**
+
 - `calculateSalary(data)` - Calculate gross, deductions, net pay
 - `processSalaryPayment(data)` - Process salary with auto reference
 - `getByStaffId(staffId)` - Get staff's salary history
@@ -267,32 +307,33 @@ Process and track salary payments
 - `generatePayslip(paymentId)` - Generate payslip
 
 **Example:**
+
 ```typescript
-import { salaryPaymentService } from '@/services';
+import { salaryPaymentService } from "@/services";
 
 // Process salary
 const salary = await salaryPaymentService.processSalaryPayment({
-  staffId: 'staff123',
-  staffName: 'Jane Smith',
-  staffNumber: 'ST001',
-  month: '10',
-  year: '2024',
+  staffId: "staff123",
+  staffName: "Jane Smith",
+  staffNumber: "ST001",
+  month: "10",
+  year: "2024",
   basicSalary: 150000,
   allowances: [
-    { name: 'Housing', amount: 50000 },
-    { name: 'Transport', amount: 30000 }
+    { name: "Housing", amount: 50000 },
+    { name: "Transport", amount: 30000 },
   ],
   deductions: [
-    { name: 'Tax', amount: 15000 },
-    { name: 'Pension', amount: 7500 }
+    { name: "Tax", amount: 15000 },
+    { name: "Pension", amount: 7500 },
   ],
-  paymentMethod: 'bank_transfer',
-  paymentDate: '2024-10-31',
-  recordedBy: 'user123'
+  paymentMethod: "bank_transfer",
+  paymentDate: "2024-10-31",
+  recordedBy: "user123",
 });
 
 // Get payroll summary
-const summary = await salaryPaymentService.getPayrollSummary('10', '2024');
+const summary = await salaryPaymentService.getPayrollSummary("10", "2024");
 console.log(`Total payroll: ₦${summary.totalNetPay.toLocaleString()}`);
 ```
 
@@ -305,9 +346,11 @@ console.log(`Total payroll: ₦${summary.totalNetPay.toLocaleString()}`);
 Six services for comprehensive asset management:
 
 #### FixedAssetService
+
 Track fixed assets
 
 **Methods:**
+
 - `createAsset(data)` - Create with auto asset code
 - `getByCategory(category)` / `getByStatus(status)` - Filter assets
 - `getActiveAssets()` - Get active assets
@@ -317,9 +360,11 @@ Track fixed assets
 - `getAssetSummary()` - Get asset statistics
 
 #### CapitalExpenditureService
+
 Manage capital projects
 
 **Methods:**
+
 - `createCapEx(data)` - Create CapEx project
 - `getByStatus(status)` - Filter by status
 - `approveCapEx(capExId, approvedBy)` - Approve project
@@ -327,6 +372,7 @@ Manage capital projects
 - `getCapExSummary()` - Get summary
 
 #### DepreciationService, AssetMaintenanceService, AssetDisposalService, AssetValuationService
+
 Complete lifecycle management
 
 ---
@@ -336,9 +382,11 @@ Complete lifecycle management
 ### 7. Accounting Services (`accountingService.ts`)
 
 #### ChartOfAccountsService
+
 Manage chart of accounts
 
 **Methods:**
+
 - `getActiveAccounts()` - Get active accounts
 - `getByAccountType(type)` - Filter by type
 - `getParentAccounts()` / `getChildAccounts(parentId)` - Hierarchy
@@ -347,9 +395,11 @@ Manage chart of accounts
 - `initializeDefaultAccounts()` - Initialize default chart
 
 #### JournalEntryService
+
 Double-entry bookkeeping
 
 **Methods:**
+
 - `createJournalEntry(data)` - Create balanced entry
 - `getByStatus(status)` / `getByDateRange(start, end)` - Filter entries
 - `getByReference(type, id)` - Find by reference
@@ -361,9 +411,11 @@ Double-entry bookkeeping
 - `getTrialBalance(asOfDate?)` - Generate trial balance
 
 #### BankAccountService
+
 Manage bank accounts
 
 **Methods:**
+
 - `getActiveAccounts()` - Get active bank accounts
 - `getByAccountNumber(number)` - Find by account number
 - `updateBalance(accountId, amount)` - Update balance
@@ -371,21 +423,22 @@ Manage bank accounts
 - `getBalanceSummary()` - Summary by account type
 
 **Example:**
+
 ```typescript
-import { journalEntryService, chartOfAccountsService } from '@/services';
+import { journalEntryService, chartOfAccountsService } from "@/services";
 
 // Initialize chart of accounts
 await chartOfAccountsService.initializeDefaultAccounts();
 
 // Create payment journal entry
 const entry = await journalEntryService.createPaymentEntry({
-  paymentDate: '2024-10-12',
+  paymentDate: "2024-10-12",
   amount: 50000,
-  paymentId: 'payment123',
-  studentName: 'John Doe',
-  bankAccountId: 'bank123',
-  revenueAccountId: 'revenue123',
-  createdBy: 'user123'
+  paymentId: "payment123",
+  studentName: "John Doe",
+  bankAccountId: "bank123",
+  revenueAccountId: "revenue123",
+  createdBy: "user123",
 });
 
 // Post the entry
@@ -421,6 +474,7 @@ console.log(`Balanced: ${trialBalance.isBalanced}`);
 ## Usage Patterns
 
 ### Import Services
+
 ```typescript
 import {
   classService,
@@ -434,26 +488,32 @@ import {
   fixedAssetService,
   chartOfAccountsService,
   journalEntryService,
-  bankAccountService
-} from '@/services';
+  bankAccountService,
+} from "@/services";
 ```
 
 ### Error Handling
+
 ```typescript
 try {
   const payment = await enhancedPaymentService.recordPayment(data);
 } catch (error) {
   if (error instanceof DataServiceError) {
-    console.error('Service error:', error.message, error.code);
+    console.error("Service error:", error.message, error.code);
   }
 }
 ```
 
 ### Transactions Pattern
+
 ```typescript
 // Record payment + update assignment + create journal entry
 const payment = await enhancedPaymentService.recordPayment(paymentData);
-await studentFeeAssignmentService.recordPayment(assignmentId, amount, allocations);
+await studentFeeAssignmentService.recordPayment(
+  assignmentId,
+  amount,
+  allocations,
+);
 await journalEntryService.createPaymentEntry(journalData);
 ```
 

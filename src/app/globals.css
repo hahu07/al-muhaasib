@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
 /* Base styles for better compatibility */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo,
+    monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,7 +39,9 @@ body {
   padding: 0;
   background-color: var(--bg-color) !important;
   color: var(--text-color) !important;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Light mode headings - with high specificity */
@@ -242,7 +248,9 @@ body.dark a {
 
 /* Theme-adaptive card styling */
 .theme-card {
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 html.light .theme-card,
@@ -341,7 +349,9 @@ body.dark .bg-muted {
 
 /* Custom theme colors for Al-Muhaasib */
 @theme {
-  --font-display: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-display:
+    ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo,
+    monospace;
 
   /* Essential colors */
   --color-inherit: inherit;

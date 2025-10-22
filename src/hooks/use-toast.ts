@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export interface Toast {
   id: string;
   title?: string;
   description?: string;
-  variant?: 'default' | 'destructive' | 'success';
+  variant?: "default" | "destructive" | "success";
   duration?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -16,11 +16,11 @@ interface ToastState {
   toasts: Toast[];
 }
 
-type ToastAction = 
-  | { type: 'ADD_TOAST'; toast: Toast }
-  | { type: 'UPDATE_TOAST'; toast: Partial<Toast> & Pick<Toast, 'id'> }
-  | { type: 'DISMISS_TOAST'; toastId?: string }
-  | { type: 'REMOVE_TOAST'; toastId?: string };
+type ToastAction =
+  | { type: "ADD_TOAST"; toast: Toast }
+  | { type: "UPDATE_TOAST"; toast: Partial<Toast> & Pick<Toast, "id"> }
+  | { type: "DISMISS_TOAST"; toastId?: string }
+  | { type: "REMOVE_TOAST"; toastId?: string };
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -61,7 +61,7 @@ export const reducer = (state: ToastState, action: ToastAction): ToastState => {
       return {
         ...state,
         toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
+          t.id === action.toast.id ? { ...t, ...action.toast } : t,
         ),
       };
 
@@ -84,7 +84,7 @@ export const reducer = (state: ToastState, action: ToastAction): ToastState => {
                 ...t,
                 open: false,
               }
-            : t
+            : t,
         ),
       };
     }

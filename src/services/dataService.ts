@@ -1,60 +1,67 @@
-import { 
-  setDoc, 
-  getDoc, 
-  listDocs, 
-  countDocs, 
-  deleteDoc
-} from '@junobuild/core';
-import { nanoid } from 'nanoid';
-import type { FinancialDashboardData } from '@/hooks/useFinancialDashboard';
-import type { StudentProfile } from '@/types';
+import {
+  setDoc,
+  getDoc,
+  listDocs,
+  countDocs,
+  deleteDoc,
+} from "@junobuild/core";
+import { nanoid } from "nanoid";
+import type { FinancialDashboardData } from "@/hooks/useFinancialDashboard";
+import type { StudentProfile } from "@/types";
 
 // Collection names - comprehensive school accounting system
 export const COLLECTIONS = {
   // School Structure
-  CLASSES: 'classes',
-  STUDENTS: 'students',
-  
+  CLASSES: "classes",
+  STUDENTS: "students",
+
   // Revenue Management
-  FEE_CATEGORIES: 'fee_categories',
-  FEE_STRUCTURES: 'fee_structures',
-  STUDENT_FEE_ASSIGNMENTS: 'student_fee_assignments',
-  PAYMENTS: 'payments',
-  
+  FEE_CATEGORIES: "fee_categories",
+  FEE_STRUCTURES: "fee_structures",
+  STUDENT_FEE_ASSIGNMENTS: "student_fee_assignments",
+  PAYMENTS: "payments",
+
   // Expense Management
-  EXPENSE_CATEGORIES: 'expense_categories',
-  EXPENSES: 'expenses',
-  BUDGETS: 'budgets',
-  
+  EXPENSE_CATEGORIES: "expense_categories",
+  EXPENSES: "expenses",
+  BUDGETS: "budgets",
+
   // Staff & Salaries
-  STAFF_MEMBERS: 'staff_members',
-  SALARY_PAYMENTS: 'salary_payments',
-  
+  STAFF_MEMBERS: "staff_members",
+  SALARY_PAYMENTS: "salary_payments",
+  STAFF_LOANS: "staff_loans",
+  LOAN_REPAYMENTS: "loan_repayments",
+  STAFF_BONUSES: "staff_bonuses",
+  STAFF_PENALTIES: "staff_penalties",
+
   // Capital Expenditure & Assets
-  FIXED_ASSETS: 'fixed_assets',
-  CAPITAL_EXPENDITURES: 'capital_expenditures',
-  DEPRECIATION_ENTRIES: 'depreciation_entries',
-  ASSET_MAINTENANCE: 'asset_maintenance',
-  ASSET_DISPOSALS: 'asset_disposals',
-  ASSET_VALUATIONS: 'asset_valuations',
-  
+  FIXED_ASSETS: "fixed_assets",
+  CAPITAL_EXPENDITURES: "capital_expenditures",
+  DEPRECIATION_ENTRIES: "depreciation_entries",
+  ASSET_MAINTENANCE: "asset_maintenance",
+  ASSET_DISPOSALS: "asset_disposals",
+  ASSET_VALUATIONS: "asset_valuations",
+
   // Accounting & Double-Entry
-  CHART_OF_ACCOUNTS: 'chart_of_accounts',
-  JOURNAL_ENTRIES: 'journal_entries',
-  BANK_ACCOUNTS: 'bank_accounts',
-  
+  CHART_OF_ACCOUNTS: "chart_of_accounts",
+  JOURNAL_ENTRIES: "journal_entries",
+  BANK_ACCOUNTS: "bank_accounts",
+
   // Users
-  USERS: 'users',
-  
+  USERS: "users",
+
   // Reporting
-  FINANCIAL_REPORTS: 'financial_reports',
+  FINANCIAL_REPORTS: "financial_reports",
 } as const;
 
 // Simple error classes
 export class DataServiceError extends Error {
-  constructor(message: string, public code: string = 'DATA_ERROR') {
+  constructor(
+    message: string,
+    public code: string = "DATA_ERROR",
+  ) {
     super(message);
-    this.name = 'DataServiceError';
+    this.name = "DataServiceError";
   }
 }
 
@@ -104,32 +111,94 @@ export class BaseDataService<T extends Record<string, unknown>> {
     this.collection = collection;
   }
 
-  async create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
+  // Helper to convert bigint values to numbers for Juno Build serialization
+  private serializeBigInts(obj: unknown): unknown {
+    if (obj === null || obj === undefined) return obj;
+
+    if (typeof obj === "bigint") {
+      return Number(obj);
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.serializeBigInts(item));
+    }
+
+    if (typeof obj === "object") {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = this.serializeBigInts(value);
+      }
+      return result;
+    }
+
+    return obj;
+  }
+
+  // Helper to convert numbers back to bigint for timestamp fields
+  private deserializeBigInts(obj: unknown): unknown {
+    if (obj === null || obj === undefined) return obj;
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.deserializeBigInts(item));
+    }
+
+    if (typeof obj === "object") {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        // Convert known timestamp fields back to bigint
+        if (
+          (key === "createdAt" ||
+            key === "updatedAt" ||
+            key === "approvedAt" ||
+            key === "lastLogin" ||
+            key === "calculatedAt" ||
+            key === "postedAt" ||
+            key === "generatedAt" ||
+            key === "uploadedAt") &&
+          typeof value === "number"
+        ) {
+          result[key] = BigInt(value);
+        } else {
+          result[key] = this.deserializeBigInts(value);
+        }
+      }
+      return result;
+    }
+
+    return obj;
+  }
+
+  async create(data: Omit<T, "id" | "createdAt" | "updatedAt">): Promise<T> {
     try {
       const id = nanoid();
-      const now = new Date();
+      // Convert to nanoseconds (Unix timestamp in nanoseconds for IC)
+      const nowNanos = BigInt(Date.now()) * BigInt(1_000_000);
       const doc = {
         id,
         ...data,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: nowNanos,
+        updatedAt: nowNanos,
       } as unknown as T;
+
+      // Convert bigint to number for serialization (Juno Build expects numbers)
+      const serializedDoc = this.serializeBigInts(doc);
 
       await setDoc({
         collection: this.collection,
         doc: {
           key: id,
-          data: doc,
+          data: serializedDoc as Record<string, unknown>,
         },
       });
 
       // Clear cache
       this.cache.clear();
-      
+
       return doc;
     } catch (error) {
       console.error(`Error creating ${this.collection}:`, error);
-      throw new DataServiceError(`Failed to create ${this.collection}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new DataServiceError(`Failed to create ${this.collection}: ${msg}`);
     }
   }
 
@@ -146,7 +215,7 @@ export class BaseDataService<T extends Record<string, unknown>> {
 
       if (!doc) return null;
 
-      const data = doc.data as T;
+      const data = this.deserializeBigInts(doc.data) as T;
       this.cache.set(cacheKey, data);
       return data;
     } catch (error) {
@@ -166,7 +235,7 @@ export class BaseDataService<T extends Record<string, unknown>> {
         filter,
       });
 
-      const data = items.map(item => item.data as T);
+      const data = items.map((item) => this.deserializeBigInts(item.data) as T);
       this.cache.set(cacheKey, data);
       return data;
     } catch (error) {
@@ -184,45 +253,56 @@ export class BaseDataService<T extends Record<string, unknown>> {
       return Number(result);
     } catch (error) {
       console.error(`Error counting ${this.collection}:`, error);
-      throw new DataServiceError(`Failed to count ${this.collection}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new DataServiceError(`Failed to count ${this.collection}: ${msg}`);
     }
   }
 
-  async update(id: string, data: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T> {
+  async update(
+    id: string,
+    data: Partial<Omit<T, "id" | "createdAt">>,
+  ): Promise<T> {
     try {
       // First get the full document to get the current version
       const docResult = await getDoc({
         collection: this.collection,
         key: id,
       });
-      
+
       if (!docResult) {
         throw new DataServiceError(`${this.collection} not found`);
       }
-      
-      const existing = docResult.data as T;
+
+      // Deserialize the existing data to convert numbers back to bigint for timestamps
+      const existing = this.deserializeBigInts(docResult.data) as T;
+      // Convert to nanoseconds (Unix timestamp in nanoseconds for IC)
+      const nowNanos = BigInt(Date.now()) * BigInt(1_000_000);
       const updated = {
         ...existing,
         ...data,
-        updatedAt: new Date(),
+        updatedAt: nowNanos,
       } as T;
+
+      // Convert bigint to number for serialization (Juno Build expects numbers)
+      const serializedDoc = this.serializeBigInts(updated);
 
       await setDoc({
         collection: this.collection,
         doc: {
           key: id,
-          data: updated,
-          version: docResult.version // Include version for optimistic locking
+          data: serializedDoc as Record<string, unknown>,
+          version: docResult.version, // Include version for optimistic locking
         },
       });
 
       // Clear cache
       this.cache.clear();
-      
+
       return updated;
     } catch (error) {
       console.error(`Error updating ${this.collection}:`, error);
-      throw new DataServiceError(`Failed to update ${this.collection}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new DataServiceError(`Failed to update ${this.collection}: ${msg}`);
     }
   }
 
@@ -233,21 +313,22 @@ export class BaseDataService<T extends Record<string, unknown>> {
         collection: this.collection,
         key: id,
       });
-      
+
       if (!docResult) {
         throw new DataServiceError(`${this.collection} not found`);
       }
-      
+
       await deleteDoc({
         collection: this.collection,
-        doc: docResult // Pass the full document with version
+        doc: docResult, // Pass the full document with version
       });
 
       // Clear cache
       this.cache.clear();
     } catch (error) {
       console.error(`Error deleting ${this.collection}:`, error);
-      throw new DataServiceError(`Failed to delete ${this.collection}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new DataServiceError(`Failed to delete ${this.collection}: ${msg}`);
     }
   }
 }
@@ -258,23 +339,26 @@ export class StudentService extends BaseDataService<StudentProfile> {
     super(COLLECTIONS.STUDENTS);
   }
 
-  async getStudentsByPaymentStatus(status: 'paid' | 'partial' | 'pending' | 'overdue'): Promise<StudentProfile[]> {
+  async getStudentsByPaymentStatus(
+    status: "paid" | "partial" | "pending" | "overdue",
+  ): Promise<StudentProfile[]> {
     const students = await this.list();
-    return students.filter(student => {
+    return students.filter((student) => {
       const balance = student.balance;
       const totalPaid = student.totalPaid;
 
       switch (status) {
-        case 'paid':
+        case "paid":
           return balance === 0;
-        case 'partial':
+        case "partial":
           return balance > 0 && totalPaid > 0;
-        case 'pending':
+        case "pending":
           return balance > 0 && totalPaid === 0;
-        case 'overdue':
+        case "overdue":
           // Consider overdue if balance > 0 and admission date is more than 60 days ago
           const admissionDate = new Date(student.admissionDate);
-          const daysDiff = (Date.now() - admissionDate.getTime()) / (1000 * 60 * 60 * 24);
+          const daysDiff =
+            (Date.now() - admissionDate.getTime()) / (1000 * 60 * 60 * 24);
           return balance > 0 && daysDiff > 60;
         default:
           return false;
@@ -290,10 +374,10 @@ export class StudentService extends BaseDataService<StudentProfile> {
     overdueStudents: number;
   }> {
     const [paid, partial, unpaid, overdue, total] = await Promise.all([
-      this.getStudentsByPaymentStatus('paid'),
-      this.getStudentsByPaymentStatus('partial'),
-      this.getStudentsByPaymentStatus('pending'),
-      this.getStudentsByPaymentStatus('overdue'),
+      this.getStudentsByPaymentStatus("paid"),
+      this.getStudentsByPaymentStatus("partial"),
+      this.getStudentsByPaymentStatus("pending"),
+      this.getStudentsByPaymentStatus("overdue"),
       this.list(),
     ]);
 
@@ -312,18 +396,18 @@ export class StudentService extends BaseDataService<StudentProfile> {
 // Main financial dashboard data aggregation
 export async function getFinancialDashboard(
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
 ): Promise<FinancialDashboardData> {
   try {
     // Import dynamically to avoid circular dependency
-    const { enhancedPaymentService } = await import('./paymentService');
-    
-    const [
-      studentSummary,
-      revenueSummary,
-    ] = await Promise.all([
+    const { enhancedPaymentService } = await import("./paymentService");
+
+    const [studentSummary, revenueSummary] = await Promise.all([
       new StudentService().getPaymentSummary(),
-      enhancedPaymentService.getRevenueSummary(startDate ? startDate.toISOString() : undefined, endDate ? endDate.toISOString() : undefined),
+      enhancedPaymentService.getRevenueSummary(
+        startDate ? startDate.toISOString() : undefined,
+        endDate ? endDate.toISOString() : undefined,
+      ),
     ]);
 
     // For now, we'll use mock data for expenses and other sections until those collections are populated
@@ -337,32 +421,45 @@ export async function getFinancialDashboard(
       expenses: {
         totalExpenses: Math.round(totalExpenses),
         byCategory: {
-          'Salaries & Benefits': { amount: totalExpenses * 0.50, count: 25 },
-          'Utilities': { amount: totalExpenses * 0.15, count: 8 },
-          'Maintenance': { amount: totalExpenses * 0.12, count: 15 },
-          'Supplies': { amount: totalExpenses * 0.10, count: 32 },
-          'Insurance': { amount: totalExpenses * 0.08, count: 4 },
-          'Other': { amount: totalExpenses * 0.05, count: 12 },
+          "Salaries & Benefits": { amount: totalExpenses * 0.5, count: 25 },
+          Utilities: { amount: totalExpenses * 0.15, count: 8 },
+          Maintenance: { amount: totalExpenses * 0.12, count: 15 },
+          Supplies: { amount: totalExpenses * 0.1, count: 32 },
+          Insurance: { amount: totalExpenses * 0.08, count: 4 },
+          Other: { amount: totalExpenses * 0.05, count: 12 },
         },
         pendingApprovals: 3,
         recurringExpenses: Math.round(totalExpenses * 0.7),
       },
       accounts: {
-        totalBalance: Math.round(revenueSummary.totalCollected - totalExpenses + 150000),
+        totalBalance: Math.round(
+          revenueSummary.totalCollected - totalExpenses + 150000,
+        ),
         byType: {
-          'Operating Account': Math.round((revenueSummary.totalCollected - totalExpenses) * 0.60),
-          'Savings Account': Math.round((revenueSummary.totalCollected - totalExpenses) * 0.25),
-          'Emergency Fund': Math.round((revenueSummary.totalCollected - totalExpenses) * 0.15),
+          "Operating Account": Math.round(
+            (revenueSummary.totalCollected - totalExpenses) * 0.6,
+          ),
+          "Savings Account": Math.round(
+            (revenueSummary.totalCollected - totalExpenses) * 0.25,
+          ),
+          "Emergency Fund": Math.round(
+            (revenueSummary.totalCollected - totalExpenses) * 0.15,
+          ),
         },
         byCurrency: {
-          'NGN': Math.round(revenueSummary.totalCollected - totalExpenses + 150000),
+          NGN: Math.round(
+            revenueSummary.totalCollected - totalExpenses + 150000,
+          ),
         },
       },
       profitLoss: {
         totalRevenue: Math.round(revenueSummary.totalCollected),
         totalExpenses: Math.round(totalExpenses),
         netProfit: Math.round(netProfit),
-        profitMargin: revenueSummary.totalCollected > 0 ? Math.round((netProfit / revenueSummary.totalCollected) * 100) : 0,
+        profitMargin:
+          revenueSummary.totalCollected > 0
+            ? Math.round((netProfit / revenueSummary.totalCollected) * 100)
+            : 0,
       },
       scholarships: {
         totalScholarships: 25,
@@ -378,8 +475,8 @@ export async function getFinancialDashboard(
       },
     };
   } catch (error) {
-    console.error('Error fetching financial dashboard:', error);
-    throw new DataServiceError('Failed to fetch financial dashboard data');
+    console.error("Error fetching financial dashboard:", error);
+    throw new DataServiceError("Failed to fetch financial dashboard data");
   }
 }
 

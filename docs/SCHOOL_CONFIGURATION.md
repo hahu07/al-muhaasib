@@ -17,6 +17,7 @@ School C → Satellite ID: ghi789-rst
 ```
 
 **Benefits:**
+
 - Complete data isolation
 - Independent scaling
 - School owns their data
@@ -26,22 +27,26 @@ School C → Satellite ID: ghi789-rst
 ## School Configuration Types
 
 ### 1. Basic Information
+
 - School name, code, motto
 - Address, city, state, country
 - Contact: phone, email, website
 
 ### 2. Branding
+
 - Logo and favicon
 - Primary, secondary, and accent colors
 - Custom fonts
 
 ### 3. Academic Settings
+
 - Current session (e.g., "2024/2025")
 - Current term (first, second, third)
 - Term dates and session dates
 - Academic calendar
 
 ### 4. Regional Settings
+
 - Currency (NGN, USD, etc.)
 - Currency symbol (₦, $, etc.)
 - Timezone (Africa/Lagos, etc.)
@@ -49,11 +54,13 @@ School C → Satellite ID: ghi789-rst
 - Date format
 
 ### 5. System Configuration
+
 - Enabled modules
 - Module permissions
 - Feature toggles
 
 ### 6. Payment Settings
+
 - Allow partial payments
 - Late fee percentage
 - Default payment methods
@@ -66,11 +73,11 @@ School C → Satellite ID: ghi789-rst
 import { useSchool } from '@/contexts/SchoolContext';
 
 function MyComponent() {
-  const { 
-    config, 
-    formatCurrency, 
+  const {
+    config,
+    formatCurrency,
     isModuleEnabled,
-    getCurrentSession 
+    getCurrentSession
   } = useSchool();
 
   // Format currency according to school settings
@@ -96,28 +103,28 @@ function MyComponent() {
 ### In Services
 
 ```typescript
-import { schoolConfigService } from '@/services';
+import { schoolConfigService } from "@/services";
 
 // Get current configuration
 const config = await schoolConfigService.getConfig();
 
 // Update configuration
 await schoolConfigService.updateConfig(configId, {
-  schoolName: 'New School Name',
-  phone: '08012345678'
+  schoolName: "New School Name",
+  phone: "08012345678",
 });
 
 // Update branding
 await schoolConfigService.updateBranding(configId, {
-  primaryColor: '#4F46E5',
-  logo: '/new-logo.png'
+  primaryColor: "#4F46E5",
+  logo: "/new-logo.png",
 });
 
 // Toggle module
-await schoolConfigService.toggleModule(configId, 'expenses', true);
+await schoolConfigService.toggleModule(configId, "expenses", true);
 
 // Check if module is enabled
-const isEnabled = await schoolConfigService.isModuleEnabled('staff');
+const isEnabled = await schoolConfigService.isModuleEnabled("staff");
 ```
 
 ## Setting Up a New School
@@ -153,19 +160,21 @@ When the first admin user logs in, a default configuration is automatically crea
 ### Method 3: Programmatic Setup
 
 ```typescript
-import { schoolConfigService } from '@/services';
+import { schoolConfigService } from "@/services";
 
 const config = await schoolConfigService.createDefaultConfig(
-  'Green Valley School',
-  'satellite-abc123',
-  'admin-user-id'
+  "Green Valley School",
+  "satellite-abc123",
+  "admin-user-id",
 );
 ```
 
 ## Multi-School Deployment Options
 
 ### Option A: Separate Deployments
+
 Each school gets their own domain/subdomain:
+
 - `greenvalley.al-muhaasib.com`
 - `stmary.al-muhaasib.com`
 
@@ -173,6 +182,7 @@ Each school gets their own domain/subdomain:
 **Cons:** Higher hosting costs, more maintenance
 
 ### Option B: Single App, Multiple Satellites
+
 One deployment serves all schools, routing to correct satellite:
 
 ```typescript
@@ -187,6 +197,7 @@ const satelliteId = getSatelliteIdFromPath();
 **Cons:** Requires tenant routing logic
 
 ### Option C: White-Label SaaS
+
 Centralized platform where schools sign up:
 
 ```typescript
@@ -194,16 +205,16 @@ Centralized platform where schools sign up:
 async function createSchool(schoolData) {
   // 1. Provision new Juno satellite
   const satelliteId = await provisionSatellite();
-  
+
   // 2. Create school configuration
   const config = await schoolConfigService.createConfig({
     ...schoolData,
-    satelliteId
+    satelliteId,
   });
-  
+
   // 3. Assign subdomain or custom domain
   await assignDomain(config.schoolCode);
-  
+
   return config;
 }
 ```
@@ -228,6 +239,7 @@ NEXT_PUBLIC_SATELLITE_ID=your-satellite-id
 ### 3. Set Permissions
 
 In Juno console:
+
 - Collection: `school_config`
 - Permissions: `managed` (controllers only)
 - Read: Public (for school info display)
@@ -241,7 +253,7 @@ In Juno console:
 // Via UI: Settings → System → Enabled Modules
 
 // Via code:
-await schoolConfigService.toggleModule(configId, 'expenses', false);
+await schoolConfigService.toggleModule(configId, "expenses", false);
 ```
 
 ### Checking Module Access
@@ -251,11 +263,11 @@ import { useSchool } from '@/contexts/SchoolContext';
 
 function ExpensesModule() {
   const { isModuleEnabled } = useSchool();
-  
+
   if (!isModuleEnabled('expenses')) {
     return <div>This module is not available</div>;
   }
-  
+
   return <ExpensesContent />;
 }
 ```
@@ -269,18 +281,15 @@ const { config } = useSchool();
 
 // Apply school colors
 document.documentElement.style.setProperty(
-  '--primary-color',
-  config.branding.primaryColor
+  "--primary-color",
+  config.branding.primaryColor,
 );
 ```
 
 ### Logo Display
 
 ```tsx
-<img 
-  src={config.branding.logo} 
-  alt={config.schoolName}
-/>
+<img src={config.branding.logo} alt={config.schoolName} />
 ```
 
 ## Best Practices
@@ -320,16 +329,19 @@ const mockConfig: SchoolConfig = {
 ## Troubleshooting
 
 ### Configuration Not Loading
+
 - Check satellite ID in environment variables
 - Verify Juno initialization
 - Check browser console for errors
 
 ### Updates Not Saving
+
 - Ensure user has admin role
 - Check collection permissions in Juno
 - Verify internet connection
 
 ### Wrong School Data Showing
+
 - Verify correct satellite ID
 - Clear browser cache
 - Check authentication state

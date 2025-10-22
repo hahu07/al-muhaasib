@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { ClassManagement } from '@/components/classes/ClassManagement';
-import { Auth } from '@/components/home/auth';
+import React from "react";
+import { ClassManagement } from "@/components/classes/ClassManagement";
+import { Auth } from "@/components/home/auth";
 
 export default function ClassesPage() {
   return (

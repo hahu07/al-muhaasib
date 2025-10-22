@@ -1,6 +1,7 @@
 # Al-Muhaasib - Quick Reference Card
 
 ## 🚀 Start Development
+
 ```bash
 npm run dev
 # → http://localhost:3000 (or 3001)
@@ -9,6 +10,7 @@ npm run dev
 ## 📝 Common Tasks
 
 ### Register a Student
+
 1. `/students` → "Register Student"
 2. Fill student details
 3. Fill guardian details
@@ -16,43 +18,49 @@ npm run dev
 5. Submit
 
 ### Record Payment
+
 - **From List**: Click "Pay" on student
 - **From Profile**: View student → "Record Payment"
 - Enter amount → Select method → Submit → Receipt
 
 ### View Student Details
+
 - Click "View" on any student
 - See all info + payment history
 - Record payments directly
 
 ### Create Sample Classes
+
 - Open registration form
 - If no classes, click "Create Sample Classes"
 - ✅ 20 classes created instantly!
 
 ## 🗂️ Key Routes
 
-| Route | Description |
-|-------|-------------|
-| `/` | Home (Dashboard) |
-| `/students` | Student List |
-| `/students/[id]` | Student Profile |
+| Route            | Description      |
+| ---------------- | ---------------- |
+| `/`              | Home (Dashboard) |
+| `/students`      | Student List     |
+| `/students/[id]` | Student Profile  |
 
 ## 📱 Pages Overview
 
 ### Dashboard (/)
+
 - Financial statistics
 - Quick actions
 - Recent activity
 - Tabs: Overview, Students, Payments
 
 ### Students (/students)
+
 - Search & filter students
 - Register new students
 - Quick payment recording
 - View student profiles
 
 ### Student Profile (/students/[id])
+
 - Complete student details
 - Guardian information
 - Financial summary
@@ -63,12 +71,14 @@ npm run dev
 ## 🎨 UI Components
 
 ### Forms
+
 - `Input` - Text, date, number inputs
 - `Select` - Dropdown with options
 - `Button` - Primary, outline, ghost variants
 - `Modal` - Centered dialog
 
 ### Status Badges
+
 - 🟢 **Paid** - All fees paid
 - 🟡 **Partial** - Some payment made
 - 🔴 **Pending** - No payment yet
@@ -76,12 +86,12 @@ npm run dev
 ## 🛠️ Services
 
 ```typescript
-import { 
+import {
   studentService,
   paymentService,
   classService,
-  feeService 
-} from '@/services';
+  feeService,
+} from "@/services";
 
 // Student operations
 await studentService.create(data);
@@ -97,18 +107,20 @@ await classService.getActiveClasses();
 await classService.updateEnrollment(id, change);
 
 // Seed data
-import { seedClasses } from '@/utils/seedData';
+import { seedClasses } from "@/utils/seedData";
 await seedClasses(); // Creates 20 sample classes
 ```
 
 ## 🐛 Fixed Issues
 
 ### ✅ Dashboard Buttons
+
 - "Add Student" → Now works
 - "Record Payment" → Now works
 - "Export Report" → Shows alert
 
 ### ✅ Class Select
+
 - Smart placeholder
 - Loading states
 - Helpful messages
@@ -117,6 +129,7 @@ await seedClasses(); // Creates 20 sample classes
 ## 📊 Sample Data
 
 ### Classes Created (20 total)
+
 ```
 Nursery: 2 classes (25 capacity)
 Primary: 6 classes (30-35 capacity)
@@ -134,13 +147,13 @@ SSS: 6 classes (35 capacity, Science/Arts)
 
 ## 📖 Documentation
 
-| Doc | Purpose |
-|-----|---------|
-| `README.md` | Overview & quick start |
-| `PHASE_1_COMPLETE.md` | Latest features |
-| `IMPLEMENTATION_COMPLETE.md` | Full project details |
-| `SESSION_SUMMARY_OCT_12.md` | Today's work |
-| `BUGFIX_*.md` | Bug fix details |
+| Doc                          | Purpose                |
+| ---------------------------- | ---------------------- |
+| `README.md`                  | Overview & quick start |
+| `PHASE_1_COMPLETE.md`        | Latest features        |
+| `IMPLEMENTATION_COMPLETE.md` | Full project details   |
+| `SESSION_SUMMARY_OCT_12.md`  | Today's work           |
+| `BUGFIX_*.md`                | Bug fix details        |
 
 ## 🔐 Authentication
 

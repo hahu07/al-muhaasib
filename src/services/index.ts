@@ -4,27 +4,28 @@
  */
 
 // Base services
-export * from './dataService';
-export * from './userService';
+export * from "./dataService";
+export * from "./userService";
 
 // School configuration
-export * from './schoolConfigService';
+export * from "./schoolConfigService";
 
 // School management
-export * from './classService';
+export * from "./classService";
 
 // Revenue management
-export * from './feeService';
-export * from './paymentService';
+export * from "./feeService";
+export * from "./paymentService";
 
 // Expense management
-export * from './expenseService';
+export * from "./expenseService";
 
 // Staff & payroll
-export * from './staffService';
+export * from "./staffService";
 
 // Asset & capital expenditure management
-export * from './assetService';
+export * from "./assetService";
+export * from "./depreciationPostingService";
 
 // Accounting & double-entry bookkeeping
-export * from './accountingService';
+export * from "./accountingService";

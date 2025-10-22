@@ -245,6 +245,7 @@ App
 ## Data Model (Key Entities)
 
 ### Student
+
 ```typescript
 {
   id: string;
@@ -269,6 +270,7 @@ App
 ```
 
 ### Payment
+
 ```typescript
 {
   id: string;
@@ -286,6 +288,7 @@ App
 ```
 
 ### Fee Assignment
+
 ```typescript
 {
   id: string;
@@ -294,7 +297,7 @@ App
   amount: number;
   academicYear: string;
   term: string;
-  status: 'active' | 'waived' | 'cancelled';
+  status: "active" | "waived" | "cancelled";
   // ... metadata
 }
 ```
@@ -304,26 +307,28 @@ App
 ## Service Layer Architecture
 
 ### Base Service Pattern
+
 ```typescript
 class BaseDataService<T> {
   // CRUD Operations
-  async create(data: T): Promise<T>
-  async getById(id: string): Promise<T | null>
-  async list(filter?): Promise<T[]>
-  async update(id: string, data: Partial<T>): Promise<T>
-  async delete(id: string): Promise<boolean>
-  
+  async create(data: T): Promise<T>;
+  async getById(id: string): Promise<T | null>;
+  async list(filter?): Promise<T[]>;
+  async update(id: string, data: Partial<T>): Promise<T>;
+  async delete(id: string): Promise<boolean>;
+
   // Caching
-  private cache: Map<string, CacheEntry<T>>
-  private readonly CACHE_TTL = 180000 // 3 minutes
-  
+  private cache: Map<string, CacheEntry<T>>;
+  private readonly CACHE_TTL = 180000; // 3 minutes
+
   // Helpers
-  protected generateId(): string
-  protected validateData(data: T): boolean
+  protected generateId(): string;
+  protected validateData(data: T): boolean;
 }
 ```
 
 ### Specialized Services
+
 ```typescript
 StudentService extends BaseDataService<Student>
   + getByAdmissionNumber()
@@ -349,6 +354,7 @@ FeeService
 ## State Management
 
 ### Global State (Context)
+
 ```
 AuthContext
 ├── user: User | null
@@ -363,6 +369,7 @@ ThemeContext
 ```
 
 ### Local Component State
+
 - Form data (useState)
 - Loading states (useState)
 - Error messages (useState)
@@ -370,6 +377,7 @@ ThemeContext
 - Filters (useState)
 
 ### Derived State
+
 - Filtered lists (useMemo)
 - Computed totals (useMemo)
 - Formatted values (helper functions)
@@ -379,24 +387,26 @@ ThemeContext
 ## Styling System
 
 ### Theme Variables (CSS)
+
 ```css
 :root {
-  --color-primary: #3B82F6;
-  --color-secondary: #9333EA;
-  --color-success: #16A34A;
-  --color-warning: #CA8A04;
-  --color-danger: #DC2626;
+  --color-primary: #3b82f6;
+  --color-secondary: #9333ea;
+  --color-success: #16a34a;
+  --color-warning: #ca8a04;
+  --color-danger: #dc2626;
   /* ... more variables */
 }
 
 .dark {
   --color-bg: #111827;
-  --color-text: #93C5FD;
+  --color-text: #93c5fd;
   /* ... dark mode overrides */
 }
 ```
 
 ### Tailwind Utility Classes
+
 ```
 Spacing: p-4, m-6, gap-2
 Colors: bg-blue-600, text-gray-900, dark:bg-gray-800
@@ -410,6 +420,7 @@ States: hover:bg-gray-50, focus:ring-2, disabled:opacity-50
 ## API Integration Points
 
 ### Current (Juno)
+
 ```typescript
 // Store data
 await dataService.setDoc(collection, key, data);
@@ -425,6 +436,7 @@ await dataService.deleteDoc(collection, key);
 ```
 
 ### Future (REST API) - Ready for Migration
+
 ```typescript
 // Just update base service methods
 async create(data: T): Promise<T> {
@@ -438,13 +450,15 @@ async create(data: T): Promise<T> {
 ## Performance Optimizations
 
 ### Implemented
+
 ✅ Service layer caching (3-min TTL, 50 entries)  
 ✅ Lazy modal loading  
 ✅ Efficient filtering algorithms  
 ✅ Route-based code splitting (Next.js)  
-✅ Image optimization (Next.js)  
+✅ Image optimization (Next.js)
 
 ### Planned
+
 - Virtual scrolling for large lists
 - Debounced search input
 - Pagination for tables
@@ -456,16 +470,19 @@ async create(data: T): Promise<T> {
 ## Security Features
 
 ### Authentication
+
 - Internet Identity integration
 - JWT-based sessions
 - Role-based access control (RBAC)
 
 ### Data Validation
+
 - Client-side form validation
 - Service layer validation
 - Type safety (TypeScript)
 
 ### Authorization
+
 - Role checks in components
 - Service-level permissions
 - Route guards
@@ -475,12 +492,14 @@ async create(data: T): Promise<T> {
 ## Testing Strategy
 
 ### Current Status
+
 - Manual testing completed
 - Component rendering verified
 - Navigation flows tested
 - Payment recording tested
 
 ### Planned
+
 - Unit tests (Jest + React Testing Library)
 - Integration tests (Playwright)
 - E2E tests (Cypress)
@@ -512,12 +531,14 @@ async create(data: T): Promise<T> {
 ## Browser Support
 
 ✅ **Desktop**
+
 - Chrome 90+ (Excellent)
 - Firefox 88+ (Excellent)
 - Safari 14+ (Excellent)
 - Edge 90+ (Excellent)
 
 ✅ **Mobile**
+
 - iOS Safari 14+ (Excellent)
 - Chrome Mobile (Excellent)
 - Samsung Internet (Good)
@@ -527,18 +548,21 @@ async create(data: T): Promise<T> {
 ## Accessibility (WCAG 2.1)
 
 ✅ **Level A** - Fully Compliant
+
 - Semantic HTML
 - Keyboard navigation
 - Alt text for images
 - Color contrast ratios
 
 ✅ **Level AA** - Mostly Compliant
+
 - Focus indicators
 - Form labels
 - Error identification
 - Consistent navigation
 
 ⚠️ **Level AAA** - Partial
+
 - Enhanced contrast (planned)
 - Sign language (not applicable)
 
@@ -547,11 +571,13 @@ async create(data: T): Promise<T> {
 ## Internationalization (i18n)
 
 ### Current
+
 - Nigerian Naira (₦) formatting
 - Nigerian date formats
 - English language
 
 ### Planned
+
 - Multi-language support
 - Currency selection
 - Date format preferences
@@ -571,10 +597,12 @@ async create(data: T): Promise<T> {
 ## Backup & Recovery
 
 ### Current
+
 - Juno automatic replication
 - No manual backup system
 
 ### Planned
+
 - Daily automated backups
 - Export to CSV/JSON
 - Point-in-time recovery
@@ -585,18 +613,21 @@ async create(data: T): Promise<T> {
 ## Feature Roadmap
 
 ### ✅ Phase 1 - COMPLETE
+
 - Student management
 - Payment processing
 - Basic reporting
 - UI components
 
 ### 🚧 Phase 2 - In Planning
+
 - Fee management UI
 - Advanced reporting
 - Bulk operations
 - Email/SMS notifications
 
 ### 📋 Phase 3 - Future
+
 - Staff & payroll
 - Expense management
 - Academic records
@@ -607,12 +638,14 @@ async create(data: T): Promise<T> {
 ## Success Metrics
 
 ### Technical
+
 - Page load < 3s ✅
 - API response < 500ms ✅
 - 99.9% uptime (target)
 - Zero data loss (target)
 
 ### Business
+
 - Streamlined payment recording ✅
 - Reduced manual errors ✅
 - Better financial visibility ✅

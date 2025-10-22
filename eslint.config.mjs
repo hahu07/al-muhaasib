@@ -20,6 +20,8 @@ const eslintConfig = [
       "next-env.d.ts",
       ".prettierrc.js",
       "public/workers/auth.worker.js",
+      "src/declarations/**",
+      "tests/**",
     ],
   },
 ];

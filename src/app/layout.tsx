@@ -15,11 +15,15 @@ export default function RootLayout({
     document.title = "Al-Muhaasib | School Management Accounting System";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Comprehensive school financial management and accounting system built on Juno platform');
+      metaDescription.setAttribute(
+        "content",
+        "Comprehensive school financial management and accounting system built on Juno platform",
+      );
     } else {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = 'Comprehensive school financial management and accounting system built on Juno platform';
+      const meta = document.createElement("meta");
+      meta.name = "description";
+      meta.content =
+        "Comprehensive school financial management and accounting system built on Juno platform";
       document.head.appendChild(meta);
     }
   }, []);
@@ -59,11 +63,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-mono antialiased transition-colors duration-300" suppressHydrationWarning>
+      <body
+        className="font-mono antialiased transition-colors duration-300"
+        suppressHydrationWarning
+      >
         <JunoProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </JunoProvider>
       </body>
     </html>

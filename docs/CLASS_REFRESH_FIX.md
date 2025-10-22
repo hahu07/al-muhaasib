@@ -1,9 +1,11 @@
 # Class Refresh Fix - Student Registration Form
 
 ## Issue
+
 After creating classes in the Class Management page (/classes), the newly created classes did not appear in the Student Registration Form dropdown.
 
 ## Root Cause
+
 1. **Service Caching**: The classService was caching the empty result for 3 minutes
 2. **No Refresh Mechanism**: The form had no way to refresh the class list after returning from class management
 3. **Static Loading**: Classes were only loaded once on component mount
@@ -11,21 +13,25 @@ After creating classes in the Class Management page (/classes), the newly create
 ## Solution Applied
 
 ### 1. Added Refresh Button
+
 - Added a refresh icon button next to the class select field
 - Button shows spinning animation while loading
 - Clears cache and fetches fresh data when clicked
 
 ### 2. Automatic Refresh on Window Focus
+
 - Form now refreshes classes when the browser window/tab gains focus
 - This handles the case where user creates classes in another tab/window
 - Automatic refresh when returning from /classes page
 
 ### 3. Force Fresh Data Option
+
 - Added `forceFresh` parameter to `loadClasses()` function
 - When true, it clears the service cache before fetching
 - Used for manual refresh and after seed operations
 
 ### 4. Better User Feedback
+
 - Shows number of classes available in helper text
 - Clear indication when refreshing
 - Visual feedback for loading states
@@ -33,6 +39,7 @@ After creating classes in the Class Management page (/classes), the newly create
 ## How It Works Now
 
 ### User Workflow:
+
 ```
 1. Open Student Registration Form → Shows "0 classes available"
 2. Click "Manage Classes" → Navigate to /classes
@@ -46,6 +53,7 @@ After creating classes in the Class Management page (/classes), the newly create
 ### Technical Implementation:
 
 **Before:**
+
 ```typescript
 // Only loaded once, cached for 3 minutes
 const loadClasses = async () => {
@@ -59,6 +67,7 @@ useEffect(() => {
 ```
 
 **After:**
+
 ```typescript
 // Can force fresh data, auto-refresh on focus
 const loadClasses = async (forceFresh = false) => {
@@ -75,31 +84,34 @@ useEffect(() => {
 
 useEffect(() => {
   const handleFocus = () => loadClasses(); // Auto-refresh on focus
-  window.addEventListener('focus', handleFocus);
-  return () => window.removeEventListener('focus', handleFocus);
+  window.addEventListener("focus", handleFocus);
+  return () => window.removeEventListener("focus", handleFocus);
 }, []);
 ```
 
 ## UI Improvements
 
 ### 1. Refresh Button
+
 ```tsx
 <Button
   type="button"
-  variant="ghost" 
+  variant="ghost"
   size="sm"
   onClick={() => loadClasses(true)}
   title="Refresh classes list"
 >
-  <RefreshCw className={`w-4 h-4 ${loadingClasses ? 'animate-spin' : ''}`} />
+  <RefreshCw className={`h-4 w-4 ${loadingClasses ? "animate-spin" : ""}`} />
 </Button>
 ```
 
 ### 2. Helper Text
+
 - **Before**: "No classes available. Click button below to create sample classes."
 - **After**: "5 classes available" or "No classes available. Use buttons below."
 
 ### 3. Layout
+
 - Refresh button positioned next to the select field
 - Clean, intuitive interface
 - Loading states clearly visible
@@ -115,6 +127,7 @@ useEffect(() => {
 ## Testing
 
 ### Test Scenario 1: Manual Refresh
+
 1. Open Student Registration Form
 2. Note: "0 classes available"
 3. Navigate to /classes in same tab
@@ -124,6 +137,7 @@ useEffect(() => {
 7. ✅ New class should appear
 
 ### Test Scenario 2: Auto Refresh
+
 1. Open Student Registration Form
 2. Open /classes in NEW TAB
 3. Create a new class in the new tab
@@ -131,6 +145,7 @@ useEffect(() => {
 5. ✅ Classes should auto-refresh and new class appears
 
 ### Test Scenario 3: Seed Classes
+
 1. Open Student Registration Form
 2. Click "Quick Seed" button
 3. Confirm dialog
@@ -139,21 +154,25 @@ useEffect(() => {
 ## Edge Cases Handled
 
 ### Empty State
+
 - Clear messaging when no classes exist
 - Provides options: "Manage Classes" or "Quick Seed"
 - Helper text guides user action
 
 ### Loading State
+
 - Refresh button shows spinning icon
 - Dropdown shows "Loading classes..."
 - Buttons disabled during loading
 
 ### Error State
+
 - Errors logged to console
 - User-friendly error handling
 - Form remains functional
 
 ### Cache Management
+
 - Cache cleared when needed
 - Fresh data guaranteed for manual refresh
 - Automatic refresh uses cached data (faster)
@@ -173,12 +192,14 @@ useEffect(() => {
 ## Future Enhancements
 
 ### Phase 2
+
 - [ ] Real-time updates via WebSocket/polling
 - [ ] Toast notifications when classes change
 - [ ] Keyboard shortcuts (Ctrl+R to refresh)
 - [ ] Auto-refresh timer option
 
-### Phase 3  
+### Phase 3
+
 - [ ] Optimistic updates (show classes immediately)
 - [ ] Background refresh without UI blocking
 - [ ] Class change notifications

@@ -1,8 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ChevronDown, Check } from 'lucide-react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Check } from "lucide-react";
 
 interface SelectContextValue {
   value: string;
@@ -24,7 +30,11 @@ interface SelectProps {
   disabled?: boolean;
 }
 
-interface SelectTriggerProps {
+interface SelectTriggerProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    "onClick" | "type"
+  > {
   children?: React.ReactNode;
   className?: string;
   placeholder?: string;
@@ -38,9 +48,9 @@ interface SelectValueProps {
 interface SelectContentProps {
   children: React.ReactNode;
   className?: string;
-  position?: 'popper' | 'item-aligned';
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
+  position?: "popper" | "item-aligned";
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
 }
 
 interface SelectItemProps {
@@ -50,12 +60,19 @@ interface SelectItemProps {
   disabled?: boolean;
 }
 
-const Select = ({ children, value: controlledValue, onValueChange, defaultValue = '', placeholder, disabled = false }: SelectProps) => {
+const Select = ({
+  children,
+  value: controlledValue,
+  onValueChange,
+  defaultValue = "",
+  placeholder,
+  disabled = false,
+}: SelectProps) => {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
-  
+
   const handleValueChange = (newValue: string) => {
     if (!isControlled) {
       setInternalValue(newValue);
@@ -65,24 +82,26 @@ const Select = ({ children, value: controlledValue, onValueChange, defaultValue 
   };
 
   return (
-    <SelectContext.Provider value={{ 
-      value, 
-      onValueChange: handleValueChange, 
-      open, 
-      onOpenChange: setOpen, 
-      placeholder, 
-      disabled 
-    }}>
+    <SelectContext.Provider
+      value={{
+        value,
+        onValueChange: handleValueChange,
+        open,
+        onOpenChange: setOpen,
+        placeholder,
+        disabled,
+      }}
+    >
       {children}
     </SelectContext.Provider>
   );
 };
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
-  ({ children, className = '', placeholder, ...props }, ref) => {
+  ({ children, className = "", placeholder, ...props }, ref) => {
     const context = useContext(SelectContext);
     if (!context) {
-      throw new Error('SelectTrigger must be used within Select');
+      throw new Error("SelectTrigger must be used within Select");
     }
 
     const classes = `flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 ${className}`;
@@ -98,32 +117,34 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
         disabled={context.disabled}
         className={classes}
         onClick={(e) => {
-          console.log('SelectTrigger clicked:', { disabled: context.disabled, open: context.open });
+          console.log("SelectTrigger clicked:", {
+            disabled: context.disabled,
+            open: context.open,
+          });
           e.preventDefault();
           if (!context.disabled) {
             context.onOpenChange(!context.open);
-            console.log('SelectTrigger: toggled open to:', !context.open);
+            console.log("SelectTrigger: toggled open to:", !context.open);
           }
         }}
         {...props}
       >
-        <span className="truncate">
-          {children}
-        </span>
-        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        <span className="truncate">{children}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
       </button>
     );
-  }
+  },
 );
 
 const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
-  ({ className = '', placeholder, ...props }, ref) => {
+  ({ className = "", placeholder, ...props }, ref) => {
     const context = useContext(SelectContext);
     if (!context) {
-      throw new Error('SelectValue must be used within Select');
+      throw new Error("SelectValue must be used within Select");
     }
 
-    const displayPlaceholder = placeholder || context.placeholder || 'Select...';
+    const displayPlaceholder =
+      placeholder || context.placeholder || "Select...";
     const classes = `pointer-events-none ${className}`;
 
     return (
@@ -131,18 +152,28 @@ const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
         {context.value || displayPlaceholder}
       </span>
     );
-  }
+  },
 );
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
-  ({ children, className = '', position = 'popper', side = 'bottom', align = 'start', ...props }, ref) => {
+  (
+    {
+      children,
+      className = "",
+      position = "popper",
+      side = "bottom",
+      align = "start",
+      ...props
+    },
+    ref,
+  ) => {
     const context = useContext(SelectContext);
     const contentRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const [styles, setStyles] = useState<React.CSSProperties>({});
 
     if (!context) {
-      throw new Error('SelectContent must be used within Select');
+      throw new Error("SelectContent must be used within Select");
     }
 
     // Find the trigger button and calculate position
@@ -155,7 +186,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
           const triggers = document.querySelectorAll('[role="combobox"]');
           for (let i = 0; i < triggers.length; i++) {
             const trigger = triggers[i] as HTMLButtonElement;
-            if (trigger.getAttribute('aria-expanded') === 'true') {
+            if (trigger.getAttribute("aria-expanded") === "true") {
               return trigger;
             }
           }
@@ -166,28 +197,28 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
         if (trigger) {
           triggerRef.current = trigger;
           const rect = trigger.getBoundingClientRect();
-          
+
           // Use fixed positioning relative to viewport
           const top = rect.bottom + 4; // 4px gap
           const left = rect.left;
           const width = rect.width;
-          
+
           // Check if dropdown would go off-screen
           const maxHeight = 384; // 96 * 4 (max-h-96 in rem)
           const spaceBelow = window.innerHeight - rect.bottom;
           const spaceAbove = rect.top;
-          
+
           let finalTop = top;
           let finalMaxHeight = Math.min(maxHeight, spaceBelow - 8);
-          
+
           // If not enough space below, show above
           if (spaceBelow < 200 && spaceAbove > spaceBelow) {
             finalTop = rect.top - Math.min(maxHeight, spaceAbove - 8);
             finalMaxHeight = Math.min(maxHeight, spaceAbove - 8);
           }
-          
+
           setStyles({
-            position: 'fixed',
+            position: "fixed",
             top: `${finalTop}px`,
             left: `${left}px`,
             width: `${width}px`,
@@ -200,12 +231,12 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
       if (context.open) {
         updatePosition();
         // Update position on scroll and resize
-        window.addEventListener('scroll', updatePosition, true);
-        window.addEventListener('resize', updatePosition);
-        
+        window.addEventListener("scroll", updatePosition, true);
+        window.addEventListener("resize", updatePosition);
+
         return () => {
-          window.removeEventListener('scroll', updatePosition, true);
-          window.removeEventListener('resize', updatePosition);
+          window.removeEventListener("scroll", updatePosition, true);
+          window.removeEventListener("resize", updatePosition);
         };
       }
     }, [context.open]);
@@ -213,36 +244,36 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Node;
-        
+
         // Don't close if clicking inside the dropdown content
         if (contentRef.current && contentRef.current.contains(target)) {
           return;
         }
-        
+
         // Don't close if clicking on the trigger
         if (triggerRef.current && triggerRef.current.contains(target)) {
           return;
         }
-        
+
         // Close if clicking outside both
         context.onOpenChange(false);
       };
 
       const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
+        if (event.key === "Escape") {
           context.onOpenChange(false);
         }
       };
 
       if (context.open) {
         // Use mousedown instead of click to prevent interference with scrolling
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('keydown', handleEscape);
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEscape);
       }
 
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleEscape);
       };
     }, [context.open, context]);
 
@@ -253,7 +284,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
     const classes = `overflow-y-auto overflow-x-hidden rounded-md border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-1 shadow-lg ${className}`;
 
     // Render to document.body portal for proper z-index
-    if (typeof document === 'undefined') {
+    if (typeof document === "undefined") {
       return null;
     }
 
@@ -261,7 +292,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
       <div
         ref={(node) => {
           contentRef.current = node;
-          if (typeof ref === 'function') ref(node);
+          if (typeof ref === "function") ref(node);
           else if (ref) ref.current = node;
         }}
         role="listbox"
@@ -269,12 +300,12 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
         style={{
           ...styles,
           // Enable smooth scrolling
-          overscrollBehavior: 'contain',
+          overscrollBehavior: "contain",
           // Ensure content is scrollable
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
         }}
-        data-state={context.open ? 'open' : 'closed'}
+        data-state={context.open ? "open" : "closed"}
         data-side={side}
         data-align={align}
         onMouseDown={(e) => {
@@ -292,31 +323,38 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
     );
 
     // Use portal to render dropdown at document.body level
-    return typeof document !== 'undefined' && document.body
+    return typeof document !== "undefined" && document.body
       ? createPortal(content, document.body)
       : null;
-  }
+  },
 );
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
-  ({ children, value, className = '', disabled = false, ...props }, ref) => {
+  ({ children, value, className = "", disabled = false, ...props }, ref) => {
     const context = useContext(SelectContext);
     if (!context) {
-      throw new Error('SelectItem must be used within Select');
+      throw new Error("SelectItem must be used within Select");
     }
 
     const isSelected = context.value === value;
-    const classes = `relative flex w-full select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? 'bg-gray-100 dark:bg-gray-700' : ''} ${disabled ? 'pointer-events-none opacity-50 cursor-not-allowed' : 'cursor-pointer pointer-events-auto'} ${className}`;
+    const classes = `relative flex w-full select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground hover:bg-gray-100 dark:hover:bg-gray-700 ${isSelected ? "bg-gray-100 dark:bg-gray-700" : ""} ${disabled ? "pointer-events-none opacity-50 cursor-not-allowed" : "cursor-pointer pointer-events-auto"} ${className}`;
 
     const handleClick = (e: React.MouseEvent) => {
-      console.log('SelectItem clicked:', { value, disabled, contextOpen: context.open });
+      console.log("SelectItem clicked:", {
+        value,
+        disabled,
+        contextOpen: context.open,
+      });
       e.preventDefault();
       e.stopPropagation();
       if (!disabled && !context.disabled) {
-        console.log('SelectItem: calling onValueChange with:', value);
+        console.log("SelectItem: calling onValueChange with:", value);
         context.onValueChange(value);
       } else {
-        console.log('SelectItem click ignored - disabled:', { disabled, contextDisabled: context.disabled });
+        console.log("SelectItem click ignored - disabled:", {
+          disabled,
+          contextDisabled: context.disabled,
+        });
       }
     };
 
@@ -341,13 +379,13 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 
-Select.displayName = 'Select';
-SelectTrigger.displayName = 'SelectTrigger';
-SelectValue.displayName = 'SelectValue';
-SelectContent.displayName = 'SelectContent';
-SelectItem.displayName = 'SelectItem';
+Select.displayName = "Select";
+SelectTrigger.displayName = "SelectTrigger";
+SelectValue.displayName = "SelectValue";
+SelectContent.displayName = "SelectContent";
+SelectItem.displayName = "SelectItem";
 
 export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };

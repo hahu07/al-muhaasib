@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface TrialBalanceReportProps {
   filters: {
     asOfDate: string;
-    format: 'monthly' | 'quarterly' | 'yearly';
+    format: "monthly" | "quarterly" | "yearly";
   };
   onBack: () => void;
 }
@@ -16,9 +16,9 @@ interface TrialBalanceReportProps {
 const TrialBalanceReport: React.FC<TrialBalanceReportProps> = ({ onBack }) => {
   return (
     <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="mb-6 flex items-center gap-4">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
         <h1 className="text-2xl font-bold">Trial Balance</h1>

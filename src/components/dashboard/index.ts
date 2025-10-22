@@ -1,13 +1,13 @@
 // Main Dashboard Component
-export { FinancialDashboard } from './FinancialDashboard';
+export { FinancialDashboard } from "./FinancialDashboard";
 
 // Individual Dashboard Components
-export { FinancialMetricsCards, QuickStats } from './FinancialMetricsCards';
-export { RevenueAnalytics } from './RevenueAnalytics';
-export { ExpenseAnalytics } from './ExpenseAnalytics';
-export { StudentPaymentStatus } from './StudentPaymentStatus';
-export { FinancialAlerts } from './FinancialAlerts';
-export { AccountBalances } from './AccountBalances';
+export { FinancialMetricsCards, QuickStats } from "./FinancialMetricsCards";
+export { RevenueAnalytics } from "./RevenueAnalytics";
+export { ExpenseAnalytics } from "./ExpenseAnalytics";
+export { StudentPaymentStatus } from "./StudentPaymentStatus";
+export { FinancialAlerts } from "./FinancialAlerts";
+export { AccountBalances } from "./AccountBalances";
 
 // Chart Components
 export {
@@ -16,7 +16,7 @@ export {
   AccountBalancesChart,
   StudentPaymentStatusChart,
   MonthlyTrendChart,
-} from './FinancialCharts';
+} from "./FinancialCharts";
 
 // Hook exports
 export {
@@ -25,4 +25,4 @@ export {
   type FinancialDashboardData,
   type UseFinancialDashboardOptions,
   type UseFinancialDashboardReturn,
-} from '../../hooks/useFinancialDashboard';
+} from "../../hooks/useFinancialDashboard";

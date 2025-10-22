@@ -50,6 +50,7 @@ pub struct PaymentData {
 **Purpose**: Ensures all essential payment information is present and properly formatted.
 
 **Validations**:
+
 - ✅ **Student Information**: Student ID and name are required and properly formatted
 - ✅ **Class Information**: Class ID and name are required
 - ✅ **Fee Assignment**: Fee assignment ID is required for tracking
@@ -63,6 +64,7 @@ pub struct PaymentData {
 **Purpose**: Validates payment amounts for precision, limits, and mathematical correctness.
 
 **Validations**:
+
 - ✅ **Positive Amounts**: All amounts must be greater than zero
 - ✅ **Minimum Amount**: Payments cannot be less than ₦100
 - ✅ **Maximum Amount**: Payments cannot exceed ₦50,000,000
@@ -76,23 +78,28 @@ pub struct PaymentData {
 **Purpose**: Enforces payment method specific rules based on amount and compliance requirements.
 
 #### Cash Payments
+
 - **Limit**: Maximum ₦500,000
 - **Rationale**: Audit compliance and cash handling security
 
 #### POS Payments
+
 - **Limit**: Maximum ₦2,000,000
 - **Rationale**: Transaction limits and processing fees
 
 #### Bank Transfers
+
 - **Large Amount Rule**: Over ₦1,000,000 should include transaction reference
 - **Rationale**: Audit trail and reconciliation
 
 #### Online Payments
+
 - **Transaction ID**: Always required
 - **Validation**: Must be at least 10 characters
 - **Rationale**: Digital payment verification
 
 #### Cheque Payments
+
 - **Cheque Number**: Required as transaction ID
 - **Format**: Must be at least 6 numeric digits
 - **Rationale**: Physical cheque verification
@@ -102,6 +109,7 @@ pub struct PaymentData {
 **Purpose**: Ensures payment dates are realistic and within acceptable ranges.
 
 **Validations**:
+
 - ✅ **Format**: Must be YYYY-MM-DD
 - ✅ **Future Limit**: Cannot be more than 30 days in the future
 - ✅ **Past Limit**: Cannot be more than 2 years in the past
@@ -114,6 +122,7 @@ pub struct PaymentData {
 **Purpose**: Enforces proper payment status transitions and workflow compliance.
 
 #### Status Transitions
+
 ```
 pending → confirmed, cancelled
 confirmed → refunded
@@ -122,6 +131,7 @@ refunded → (no transitions)
 ```
 
 #### Status-Specific Rules
+
 - **Cancelled**: Must include cancellation reason in notes
 - **Refunded**: Must include refund explanation in notes
 - **New Payments**: Can start as 'pending' or 'confirmed'
@@ -133,6 +143,7 @@ refunded → (no transitions)
 **Purpose**: Ensures payments are properly allocated across fee categories.
 
 **Validations**:
+
 - ✅ **Minimum Allocations**: At least one allocation required
 - ✅ **Maximum Allocations**: Cannot exceed 20 allocations
 - ✅ **Amount Matching**: Total allocations must equal payment amount (±₦0.01)
@@ -140,6 +151,7 @@ refunded → (no transitions)
 - ✅ **Fee Type Validation**: Must be valid fee type from predefined list
 
 #### Valid Fee Types
+
 - `tuition`, `uniform`, `feeding`, `transport`, `books`
 - `sports`, `development`, `examination`, `pta`, `computer`
 - `library`, `laboratory`, `lesson`, `other`
@@ -151,6 +163,7 @@ refunded → (no transitions)
 **Purpose**: Prevents duplicate payment references and ensures unique identification.
 
 **Validations**:
+
 - ✅ **Format**: Must follow PAY-YYYY-XXXXXXXX pattern
 - ✅ **Uniqueness**: No duplicate references allowed
 - ✅ **Year Component**: Must contain valid 4-digit year
@@ -163,11 +176,13 @@ refunded → (no transitions)
 **Purpose**: Implements school-specific business rules and policies.
 
 #### Large Payment Rules
+
 - **Over ₦1,000,000**: Should specify who made the payment
 - **Over ₦5,000,000**: Must include explanatory notes and transaction ID
 - **Weekend Payments**: Over ₦100,000 require justification notes
 
 #### Compliance Rules
+
 - **Receipt URLs**: Must be valid format if provided
 - **Notes**: Maximum 1,000 characters
 - **Paid By**: Maximum 100 characters
@@ -179,12 +194,14 @@ refunded → (no transitions)
 **Purpose**: Detects potentially fraudulent or suspicious payment patterns.
 
 **Validations**:
+
 - ✅ **Round Number Detection**: Large round amounts require detailed notes
 - ✅ **Transaction ID Validation**: Format specific to payment method
 - ✅ **Reference Uniqueness**: Prevents duplicate payment creation
 - ✅ **Amount Reasonableness**: Flags suspicious patterns
 
 #### Fraud Detection Rules
+
 - Amounts ending in "0000" over ₦100,000 need detailed notes
 - Online transactions need proper transaction references
 - Cheque numbers must be valid format
@@ -196,6 +213,7 @@ refunded → (no transitions)
 **Purpose**: Ensures payments are associated with valid students and classes.
 
 **Validations**:
+
 - ✅ **Student ID**: Minimum 3 characters
 - ✅ **Student Name**: Must contain alphabetic characters
 - ✅ **Class Information**: Class ID and name minimum lengths
@@ -212,10 +230,10 @@ The payment validation works seamlessly with the existing `paymentService.ts`:
 ```typescript
 // This will trigger validation hooks
 const payment = await paymentService.recordPayment({
-  studentId: 'STU001',
-  studentName: 'Ahmad Musa',
+  studentId: "STU001",
+  studentName: "Ahmad Musa",
   amount: 75000,
-  paymentMethod: 'bank_transfer',
+  paymentMethod: "bank_transfer",
   // ... other required fields
 });
 ```
@@ -229,18 +247,20 @@ try {
   await paymentService.recordPayment(invalidPaymentData);
 } catch (error) {
   // Error: "Cash payments cannot exceed ₦500,000 for audit compliance"
-  console.error('Payment validation failed:', error);
+  console.error("Payment validation failed:", error);
 }
 ```
 
 ## Performance Considerations
 
 ### Validation Speed
+
 - All validations run before blockchain write
 - Immediate feedback to users
 - No invalid data reaches storage
 
 ### Optimization Features
+
 - Efficient pattern matching for reference validation
 - Minimal external queries for uniqueness checks
 - Fast mathematical validations for amounts
@@ -248,26 +268,31 @@ try {
 ## Benefits
 
 ### 1. Data Integrity
+
 - **Zero Invalid Payments**: All payments are validated before storage
 - **Consistent Format**: Standardized data structure across all payments
 - **Mathematical Accuracy**: Amounts and allocations are mathematically correct
 
 ### 2. Business Rule Compliance
+
 - **Policy Enforcement**: School policies are automatically enforced
 - **Audit Compliance**: Large payments have proper documentation
 - **Regulatory Adherence**: Payment limits comply with regulations
 
 ### 3. Fraud Prevention
+
 - **Suspicious Pattern Detection**: Automated detection of unusual payments
 - **Reference Security**: Unique references prevent duplicate payments
 - **Transaction Validation**: Proper transaction references for audit
 
 ### 4. User Experience
+
 - **Immediate Feedback**: Validation errors shown instantly
 - **Clear Error Messages**: Descriptive error messages guide users
 - **Prevented Data Loss**: Invalid payments caught before submission
 
 ### 5. Audit Trail
+
 - **Complete Tracking**: Every payment change is validated
 - **Status Workflow**: Proper status transitions maintained
 - **Documentation Requirements**: Large payments require proper notes
@@ -286,6 +311,7 @@ The system includes comprehensive tests covering:
 8. **Integration Tests**
 
 Run tests with:
+
 ```bash
 npx tsx payment-validation-demo.ts
 ```
@@ -310,12 +336,14 @@ junobuild-satellite = { version = "0.0.22", features = ["assert_set_doc"] }
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Dynamic Payment Limits**: Configurable limits based on school settings
 2. **Advanced Fraud Detection**: ML-based suspicious pattern detection
 3. **Integration Validation**: Cross-reference with external payment systems
 4. **Bulk Payment Validation**: Optimized validation for bulk operations
 
 ### Monitoring
+
 - Payment validation success/failure rates
 - Common validation errors tracking
 - Performance metrics for validation speed

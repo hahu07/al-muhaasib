@@ -1,5 +1,5 @@
-import { Auth } from '@/components/home/auth';
-import AssetManagement from '@/components/assets/AssetManagement';
+import { Auth } from "@/components/home/auth";
+import AssetManagement from "@/components/assets/AssetManagement";
 
 export default function AssetsPage() {
   return (

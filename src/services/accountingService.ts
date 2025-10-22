@@ -1,6 +1,11 @@
-import { BaseDataService, COLLECTIONS } from './dataService';
-import type { ChartOfAccounts, JournalEntry, JournalLine, BankAccount } from '@/types';
-import { nanoid } from 'nanoid';
+import { BaseDataService, COLLECTIONS } from "./dataService";
+import type {
+  ChartOfAccounts,
+  JournalEntry,
+  JournalLine,
+  BankAccount,
+} from "@/types";
+import { nanoid } from "nanoid";
 
 export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
   constructor() {
@@ -12,15 +17,17 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
    */
   async getActiveAccounts(): Promise<ChartOfAccounts[]> {
     const accounts = await this.list();
-    return accounts.filter(a => a.isActive);
+    return accounts.filter((a) => a.isActive);
   }
 
   /**
    * Get accounts by type
    */
-  async getByAccountType(type: ChartOfAccounts['accountType']): Promise<ChartOfAccounts[]> {
+  async getByAccountType(
+    type: ChartOfAccounts["accountType"],
+  ): Promise<ChartOfAccounts[]> {
     const accounts = await this.getActiveAccounts();
-    return accounts.filter(a => a.accountType === type);
+    return accounts.filter((a) => a.accountType === type);
   }
 
   /**
@@ -28,7 +35,7 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
    */
   async getParentAccounts(): Promise<ChartOfAccounts[]> {
     const accounts = await this.getActiveAccounts();
-    return accounts.filter(a => !a.parentAccountId);
+    return accounts.filter((a) => !a.parentAccountId);
   }
 
   /**
@@ -36,7 +43,7 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
    */
   async getChildAccounts(parentAccountId: string): Promise<ChartOfAccounts[]> {
     const accounts = await this.getActiveAccounts();
-    return accounts.filter(a => a.parentAccountId === parentAccountId);
+    return accounts.filter((a) => a.parentAccountId === parentAccountId);
   }
 
   /**
@@ -44,19 +51,21 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
    */
   async getByAccountCode(accountCode: string): Promise<ChartOfAccounts | null> {
     const accounts = await this.list();
-    return accounts.find(a => a.accountCode === accountCode) || null;
+    return accounts.find((a) => a.accountCode === accountCode) || null;
   }
 
   /**
    * Get hierarchical chart of accounts
    */
-  async getHierarchicalAccounts(): Promise<(ChartOfAccounts & { children?: ChartOfAccounts[] })[]> {
+  async getHierarchicalAccounts(): Promise<
+    (ChartOfAccounts & { children?: ChartOfAccounts[] })[]
+  > {
     const accounts = await this.getActiveAccounts();
-    const parentAccounts = accounts.filter(a => !a.parentAccountId);
+    const parentAccounts = accounts.filter((a) => !a.parentAccountId);
 
-    return parentAccounts.map(parent => ({
+    return parentAccounts.map((parent) => ({
       ...parent,
-      children: accounts.filter(a => a.parentAccountId === parent.id),
+      children: accounts.filter((a) => a.parentAccountId === parent.id),
     }));
   }
 
@@ -66,37 +75,188 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
   async initializeDefaultAccounts(): Promise<ChartOfAccounts[]> {
     const defaultAccounts = [
       // Assets
-      { accountCode: '1000', accountName: 'Assets', accountType: 'asset' as const, description: 'All assets' },
-      { accountCode: '1100', accountName: 'Current Assets', accountType: 'asset' as const, description: 'Current assets' },
-      { accountCode: '1110', accountName: 'Cash', accountType: 'asset' as const, description: 'Cash on hand' },
-      { accountCode: '1120', accountName: 'Bank Accounts', accountType: 'asset' as const, description: 'Bank accounts' },
-      { accountCode: '1130', accountName: 'Accounts Receivable', accountType: 'asset' as const, description: 'Student fees receivable' },
-      { accountCode: '1200', accountName: 'Fixed Assets', accountType: 'asset' as const, description: 'Long-term assets' },
-      { accountCode: '1210', accountName: 'Buildings', accountType: 'asset' as const, description: 'School buildings' },
-      { accountCode: '1220', accountName: 'Equipment', accountType: 'asset' as const, description: 'School equipment' },
-      { accountCode: '1230', accountName: 'Furniture', accountType: 'asset' as const, description: 'School furniture' },
-      
+      {
+        accountCode: "1000",
+        accountName: "Assets",
+        accountType: "asset" as const,
+        description: "All assets",
+      },
+      {
+        accountCode: "1100",
+        accountName: "Current Assets",
+        accountType: "asset" as const,
+        description: "Current assets",
+      },
+      {
+        accountCode: "1110",
+        accountName: "Cash",
+        accountType: "asset" as const,
+        description: "Cash on hand",
+      },
+      {
+        accountCode: "1120",
+        accountName: "Bank Accounts",
+        accountType: "asset" as const,
+        description: "Bank accounts",
+      },
+      {
+        accountCode: "1130",
+        accountName: "Accounts Receivable",
+        accountType: "asset" as const,
+        description: "Student fees receivable",
+      },
+      {
+        accountCode: "1200",
+        accountName: "Fixed Assets",
+        accountType: "asset" as const,
+        description: "Long-term assets",
+      },
+      {
+        accountCode: "1210",
+        accountName: "Buildings",
+        accountType: "asset" as const,
+        description: "School buildings",
+      },
+      {
+        accountCode: "1220",
+        accountName: "Equipment",
+        accountType: "asset" as const,
+        description: "School equipment",
+      },
+      {
+        accountCode: "1230",
+        accountName: "Furniture",
+        accountType: "asset" as const,
+        description: "School furniture",
+      },
+      {
+        accountCode: "1250",
+        accountName: "Accumulated Depreciation",
+        accountType: "asset" as const,
+        description: "Accumulated depreciation (contra-asset)",
+      },
+
       // Liabilities
-      { accountCode: '2000', accountName: 'Liabilities', accountType: 'liability' as const, description: 'All liabilities' },
-      { accountCode: '2100', accountName: 'Current Liabilities', accountType: 'liability' as const, description: 'Short-term liabilities' },
-      { accountCode: '2110', accountName: 'Accounts Payable', accountType: 'liability' as const, description: 'Amounts owed to vendors' },
-      { accountCode: '2120', accountName: 'Salaries Payable', accountType: 'liability' as const, description: 'Unpaid salaries' },
-      
+      {
+        accountCode: "2000",
+        accountName: "Liabilities",
+        accountType: "liability" as const,
+        description: "All liabilities",
+      },
+      {
+        accountCode: "2100",
+        accountName: "Current Liabilities",
+        accountType: "liability" as const,
+        description: "Short-term liabilities",
+      },
+      {
+        accountCode: "2110",
+        accountName: "Accounts Payable",
+        accountType: "liability" as const,
+        description: "Amounts owed to vendors",
+      },
+      {
+        accountCode: "2120",
+        accountName: "Salaries Payable",
+        accountType: "liability" as const,
+        description: "Unpaid salaries",
+      },
+      {
+        accountCode: "2130",
+        accountName: "Tax Payable",
+        accountType: "liability" as const,
+        description: "Tax payable",
+      },
+
       // Equity
-      { accountCode: '3000', accountName: 'Equity', accountType: 'equity' as const, description: 'Owner\'s equity' },
-      { accountCode: '3100', accountName: 'Retained Earnings', accountType: 'equity' as const, description: 'Accumulated profits' },
-      
+      {
+        accountCode: "3000",
+        accountName: "Equity",
+        accountType: "equity" as const,
+        description: "Owner's equity",
+      },
+      {
+        accountCode: "3100",
+        accountName: "Retained Earnings",
+        accountType: "equity" as const,
+        description: "Accumulated profits",
+      },
+
       // Revenue
-      { accountCode: '4000', accountName: 'Revenue', accountType: 'revenue' as const, description: 'All revenue' },
-      { accountCode: '4100', accountName: 'Tuition Fees', accountType: 'revenue' as const, description: 'Tuition fee income' },
-      { accountCode: '4200', accountName: 'Other Fees', accountType: 'revenue' as const, description: 'Other fee income' },
-      
+      {
+        accountCode: "4000",
+        accountName: "Revenue",
+        accountType: "revenue" as const,
+        description: "All revenue",
+      },
+      {
+        accountCode: "4100",
+        accountName: "Tuition Fees",
+        accountType: "revenue" as const,
+        description: "Tuition fee income",
+      },
+      {
+        accountCode: "4200",
+        accountName: "Other Fees",
+        accountType: "revenue" as const,
+        description: "Other fee income",
+      },
+      {
+        accountCode: "4300",
+        accountName: "Other Income",
+        accountType: "revenue" as const,
+        description: "Other income",
+      },
+
       // Expenses
-      { accountCode: '5000', accountName: 'Expenses', accountType: 'expense' as const, description: 'All expenses' },
-      { accountCode: '5100', accountName: 'Salaries & Wages', accountType: 'expense' as const, description: 'Staff salaries' },
-      { accountCode: '5200', accountName: 'Utilities', accountType: 'expense' as const, description: 'Utility expenses' },
-      { accountCode: '5300', accountName: 'Maintenance', accountType: 'expense' as const, description: 'Maintenance costs' },
-      { accountCode: '5400', accountName: 'Supplies', accountType: 'expense' as const, description: 'School supplies' },
+      {
+        accountCode: "5000",
+        accountName: "Expenses",
+        accountType: "expense" as const,
+        description: "All expenses",
+      },
+      {
+        accountCode: "5100",
+        accountName: "Salaries & Wages",
+        accountType: "expense" as const,
+        description: "Staff salaries",
+      },
+      {
+        accountCode: "5200",
+        accountName: "Utilities",
+        accountType: "expense" as const,
+        description: "Utility expenses",
+      },
+      {
+        accountCode: "5300",
+        accountName: "Maintenance",
+        accountType: "expense" as const,
+        description: "Maintenance costs",
+      },
+      {
+        accountCode: "5400",
+        accountName: "Supplies",
+        accountType: "expense" as const,
+        description: "School supplies",
+      },
+      {
+        accountCode: "5500",
+        accountName: "Depreciation Expense",
+        accountType: "expense" as const,
+        description: "Depreciation expense",
+      },
+      {
+        accountCode: "5600",
+        accountName: "Administrative Expense",
+        accountType: "expense" as const,
+        description: "Administrative expenses",
+      },
+      {
+        accountCode: "5900",
+        accountName: "Other Expenses",
+        accountType: "expense" as const,
+        description: "Other expenses",
+      },
     ];
 
     const createdAccounts: ChartOfAccounts[] = [];
@@ -127,7 +287,7 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     entryDate: string;
     description: string;
     lines: JournalLine[];
-    referenceType?: JournalEntry['referenceType'];
+    referenceType?: JournalEntry["referenceType"];
     referenceId?: string;
     createdBy: string;
   }): Promise<JournalEntry> {
@@ -139,7 +299,9 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     const totalCredit = data.lines.reduce((sum, line) => sum + line.credit, 0);
 
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
-      throw new Error('Journal entry is not balanced. Debits must equal credits.');
+      throw new Error(
+        "Journal entry is not balanced. Debits must equal credits.",
+      );
     }
 
     return this.create({
@@ -147,24 +309,27 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
       entryNumber,
       totalDebit,
       totalCredit,
-      status: 'draft',
+      status: "draft",
     });
   }
 
   /**
    * Get journal entries by status
    */
-  async getByStatus(status: JournalEntry['status']): Promise<JournalEntry[]> {
+  async getByStatus(status: JournalEntry["status"]): Promise<JournalEntry[]> {
     const entries = await this.list();
-    return entries.filter(e => e.status === status);
+    return entries.filter((e) => e.status === status);
   }
 
   /**
    * Get journal entries by date range
    */
-  async getByDateRange(startDate: string, endDate: string): Promise<JournalEntry[]> {
+  async getByDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<JournalEntry[]> {
     const entries = await this.list();
-    return entries.filter(e => {
+    return entries.filter((e) => {
       const entryDate = e.entryDate;
       return entryDate >= startDate && entryDate <= endDate;
     });
@@ -173,9 +338,14 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
   /**
    * Get journal entries by reference
    */
-  async getByReference(referenceType: JournalEntry['referenceType'], referenceId: string): Promise<JournalEntry[]> {
+  async getByReference(
+    referenceType: JournalEntry["referenceType"],
+    referenceId: string,
+  ): Promise<JournalEntry[]> {
     const entries = await this.list();
-    return entries.filter(e => e.referenceType === referenceType && e.referenceId === referenceId);
+    return entries.filter(
+      (e) => e.referenceType === referenceType && e.referenceId === referenceId,
+    );
   }
 
   /**
@@ -184,20 +354,20 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
   async postJournalEntry(entryId: string): Promise<JournalEntry> {
     const entry = await this.getById(entryId);
     if (!entry) {
-      throw new Error('Journal entry not found');
+      throw new Error("Journal entry not found");
     }
 
-    if (entry.status === 'posted') {
-      throw new Error('Journal entry already posted');
+    if (entry.status === "posted") {
+      throw new Error("Journal entry already posted");
     }
 
     // Validate balance again
     if (Math.abs(entry.totalDebit - entry.totalCredit) > 0.01) {
-      throw new Error('Cannot post unbalanced journal entry');
+      throw new Error("Cannot post unbalanced journal entry");
     }
 
     return this.update(entryId, {
-      status: 'posted',
+      status: "posted",
       postedAt: new Date(),
     });
   }
@@ -217,16 +387,16 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     const lines: JournalLine[] = [
       {
         accountId: data.bankAccountId,
-        accountName: 'Bank',
-        accountCode: '1120',
+        accountName: "Bank",
+        accountCode: "1120",
         debit: data.amount,
         credit: 0,
         description: `Payment from ${data.studentName}`,
       },
       {
         accountId: data.revenueAccountId,
-        accountName: 'Tuition Fees',
-        accountCode: '4100',
+        accountName: "Tuition Fees",
+        accountCode: "4100",
         debit: 0,
         credit: data.amount,
         description: `Fee payment from ${data.studentName}`,
@@ -237,7 +407,7 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
       entryDate: data.paymentDate,
       description: `Student fee payment - ${data.studentName}`,
       lines,
-      referenceType: 'payment',
+      referenceType: "payment",
       referenceId: data.paymentId,
       createdBy: data.createdBy,
     });
@@ -258,16 +428,16 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     const lines: JournalLine[] = [
       {
         accountId: data.expenseAccountId,
-        accountName: 'Expense',
-        accountCode: '5000',
+        accountName: "Expense",
+        accountCode: "5000",
         debit: data.amount,
         credit: 0,
         description: data.expenseDescription,
       },
       {
         accountId: data.paymentAccountId,
-        accountName: 'Bank/Cash',
-        accountCode: '1120',
+        accountName: "Bank/Cash",
+        accountCode: "1120",
         debit: 0,
         credit: data.amount,
         description: `Payment for ${data.expenseDescription}`,
@@ -278,7 +448,7 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
       entryDate: data.expenseDate,
       description: `Expense: ${data.expenseDescription}`,
       lines,
-      referenceType: 'expense',
+      referenceType: "expense",
       referenceId: data.expenseId,
       createdBy: data.createdBy,
     });
@@ -299,16 +469,16 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     const lines: JournalLine[] = [
       {
         accountId: data.salaryAccountId,
-        accountName: 'Salaries & Wages',
-        accountCode: '5100',
+        accountName: "Salaries & Wages",
+        accountCode: "5100",
         debit: data.netPay,
         credit: 0,
         description: `Salary for ${data.staffName}`,
       },
       {
         accountId: data.bankAccountId,
-        accountName: 'Bank',
-        accountCode: '1120',
+        accountName: "Bank",
+        accountCode: "1120",
         debit: 0,
         credit: data.netPay,
         description: `Salary payment to ${data.staffName}`,
@@ -319,7 +489,7 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
       entryDate: data.paymentDate,
       description: `Salary payment - ${data.staffName}`,
       lines,
-      referenceType: 'salary',
+      referenceType: "salary",
       referenceId: data.salaryPaymentId,
       createdBy: data.createdBy,
     });
@@ -339,16 +509,16 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
     const lines: JournalLine[] = [
       {
         accountId: data.depreciationExpenseAccountId,
-        accountName: 'Depreciation Expense',
-        accountCode: '5000',
+        accountName: "Depreciation Expense",
+        accountCode: "5000",
         debit: data.amount,
         credit: 0,
         description: `Depreciation for ${data.assetName}`,
       },
       {
         accountId: data.accumulatedDepreciationAccountId,
-        accountName: 'Accumulated Depreciation',
-        accountCode: '1290',
+        accountName: "Accumulated Depreciation",
+        accountCode: "1290",
         debit: 0,
         credit: data.amount,
         description: `Accumulated depreciation for ${data.assetName}`,
@@ -359,7 +529,7 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
       entryDate: data.depreciationDate,
       description: `Depreciation - ${data.assetName}`,
       lines,
-      referenceType: 'depreciation',
+      referenceType: "depreciation",
       createdBy: data.createdBy,
     });
   }
@@ -368,23 +538,36 @@ export class JournalEntryService extends BaseDataService<JournalEntry> {
    * Get trial balance
    */
   async getTrialBalance(asOfDate?: string): Promise<{
-    accounts: { accountCode: string; accountName: string; debit: number; credit: number }[];
+    accounts: {
+      accountCode: string;
+      accountName: string;
+      debit: number;
+      credit: number;
+    }[];
     totalDebit: number;
     totalCredit: number;
     isBalanced: boolean;
   }> {
     let entries: JournalEntry[];
     if (asOfDate) {
-      entries = await this.getByDateRange('1900-01-01', asOfDate);
+      entries = await this.getByDateRange("1900-01-01", asOfDate);
     } else {
       entries = await this.list();
     }
 
-    const postedEntries = entries.filter(e => e.status === 'posted');
-    const accountBalances = new Map<string, { accountCode: string; accountName: string; debit: number; credit: number }>();
+    const postedEntries = entries.filter((e) => e.status === "posted");
+    const accountBalances = new Map<
+      string,
+      {
+        accountCode: string;
+        accountName: string;
+        debit: number;
+        credit: number;
+      }
+    >();
 
-    postedEntries.forEach(entry => {
-      entry.lines.forEach(line => {
+    postedEntries.forEach((entry) => {
+      entry.lines.forEach((line) => {
         const existing = accountBalances.get(line.accountId) || {
           accountCode: line.accountCode,
           accountName: line.accountName,
@@ -423,7 +606,7 @@ export class BankAccountService extends BaseDataService<BankAccount> {
    */
   async getActiveAccounts(): Promise<BankAccount[]> {
     const accounts = await this.list();
-    return accounts.filter(a => a.isActive);
+    return accounts.filter((a) => a.isActive);
   }
 
   /**
@@ -431,7 +614,7 @@ export class BankAccountService extends BaseDataService<BankAccount> {
    */
   async getByAccountNumber(accountNumber: string): Promise<BankAccount | null> {
     const accounts = await this.list();
-    return accounts.find(a => a.accountNumber === accountNumber) || null;
+    return accounts.find((a) => a.accountNumber === accountNumber) || null;
   }
 
   /**
@@ -440,7 +623,7 @@ export class BankAccountService extends BaseDataService<BankAccount> {
   async updateBalance(accountId: string, amount: number): Promise<BankAccount> {
     const account = await this.getById(accountId);
     if (!account) {
-      throw new Error('Bank account not found');
+      throw new Error("Bank account not found");
     }
 
     const newBalance = account.balance + amount;
@@ -469,7 +652,7 @@ export class BankAccountService extends BaseDataService<BankAccount> {
     const accounts = await this.getActiveAccounts();
 
     const byType: Record<string, number> = {};
-    accounts.forEach(a => {
+    accounts.forEach((a) => {
       byType[a.accountType] = (byType[a.accountType] || 0) + a.balance;
     });
 

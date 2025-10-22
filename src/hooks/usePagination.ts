@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 /**
  * Configuration options for pagination
@@ -76,7 +76,9 @@ export interface PaginationActions {
 /**
  * Return type of usePagination hook
  */
-export interface UsePaginationReturn extends PaginationState, PaginationActions {
+export interface UsePaginationReturn
+  extends PaginationState,
+    PaginationActions {
   /** Page numbers to display in pagination controls */
   pageNumbers: number[];
   /** Whether pagination controls should be shown */
@@ -89,7 +91,7 @@ export interface UsePaginationReturn extends PaginationState, PaginationActions 
 function generatePageNumbers(
   currentPage: number,
   totalPages: number,
-  siblingCount: number = 1
+  siblingCount: number = 1,
 ): number[] {
   if (totalPages <= 1) return [];
 
@@ -126,7 +128,7 @@ function generatePageNumbers(
 /**
  * Production-grade pagination hook with comprehensive features for managing
  * paginated data in both client-side and server-side scenarios.
- * 
+ *
  * Features:
  * - Client-side and server-side pagination support
  * - URL synchronization with Next.js router
@@ -135,27 +137,27 @@ function generatePageNumbers(
  * - TypeScript-first design
  * - Performance optimizations
  * - Accessibility support
- * 
+ *
  * @template T The type of items being paginated
  * @param allItems All items for client-side pagination (optional for server-side)
  * @param totalItems Total items count for server-side pagination
  * @param config Pagination configuration options
- * 
+ *
  * @example
  * ```tsx
  * // Client-side pagination
- * const { 
- *   items, 
- *   currentPage, 
- *   totalPages, 
- *   goToNext, 
+ * const {
+ *   items,
+ *   currentPage,
+ *   totalPages,
+ *   goToNext,
  *   goToPrevious,
- *   pageNumbers 
+ *   pageNumbers
  * } = usePagination(students, 0, {
  *   initialPageSize: 10,
  *   syncWithUrl: true
  * });
- * 
+ *
  * // Server-side pagination
  * const pagination = usePagination([], studentsTotal, {
  *   serverSide: true,
@@ -168,7 +170,7 @@ function generatePageNumbers(
 export function usePagination<T = unknown>(
   allItems: T[] = [],
   totalItems: number = 0,
-  config: PaginationConfig = {}
+  config: PaginationConfig = {},
 ): UsePaginationReturn {
   const {
     initialPage = 1,
@@ -176,8 +178,8 @@ export function usePagination<T = unknown>(
     pageSizeOptions = [10, 20, 50, 100],
     siblingCount = 1,
     syncWithUrl = false,
-    pageParam = 'page',
-    pageSizeParam = 'pageSize',
+    pageParam = "page",
+    pageSizeParam = "pageSize",
     serverSide = false,
     onPaginationChange,
   } = config;
@@ -186,7 +188,7 @@ export function usePagination<T = unknown>(
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  
+
   // Use routing hooks only if syncWithUrl is enabled
   const activeRouter = syncWithUrl ? router : null;
   const activeSearchParams = syncWithUrl ? searchParams : null;
@@ -210,7 +212,13 @@ export function usePagination<T = unknown>(
       }
     }
     return initialPageSize;
-  }, [syncWithUrl, activeSearchParams, pageSizeParam, initialPageSize, pageSizeOptions]);
+  }, [
+    syncWithUrl,
+    activeSearchParams,
+    pageSizeParam,
+    initialPageSize,
+    pageSizeOptions,
+  ]);
 
   // State management
   const [currentPage, setCurrentPage] = useState(() => getInitialPage());
@@ -232,7 +240,7 @@ export function usePagination<T = unknown>(
   // Generate page numbers for pagination controls
   const pageNumbers = useMemo(
     () => generatePageNumbers(currentPage, totalPages, siblingCount),
-    [currentPage, totalPages, siblingCount]
+    [currentPage, totalPages, siblingCount],
   );
 
   // Update URL when pagination changes
@@ -241,7 +249,7 @@ export function usePagination<T = unknown>(
       if (!syncWithUrl || !activeRouter || !activePathname) return;
 
       const params = new URLSearchParams(activeSearchParams?.toString());
-      
+
       if (newPage === 1) {
         params.delete(pageParam);
       } else {
@@ -255,8 +263,10 @@ export function usePagination<T = unknown>(
       }
 
       const queryString = params.toString();
-      const newUrl = queryString ? `${activePathname}?${queryString}` : activePathname;
-      
+      const newUrl = queryString
+        ? `${activePathname}?${queryString}`
+        : activePathname;
+
       activeRouter.push(newUrl, { scroll: false });
     },
     [
@@ -267,7 +277,7 @@ export function usePagination<T = unknown>(
       pageParam,
       pageSizeParam,
       initialPageSize,
-    ]
+    ],
   );
 
   // Sync with URL changes
@@ -302,7 +312,7 @@ export function usePagination<T = unknown>(
       setCurrentPage(validPage);
       updateUrl(validPage, pageSize);
     },
-    [currentPage, totalPages, pageSize, updateUrl]
+    [currentPage, totalPages, pageSize, updateUrl],
   );
 
   const goToNext = useCallback(() => {
@@ -337,7 +347,7 @@ export function usePagination<T = unknown>(
       setCurrentPage(newPage);
       updateUrl(newPage, newPageSize);
     },
-    [currentPage, pageSize, pageSizeOptions, updateUrl]
+    [currentPage, pageSize, pageSizeOptions, updateUrl],
   );
 
   const reset = useCallback(() => {
@@ -346,15 +356,18 @@ export function usePagination<T = unknown>(
     updateUrl(initialPage, initialPageSize);
   }, [initialPage, initialPageSize, updateUrl]);
 
-  const setTotalItems = useCallback((total: number) => {
-    setServerTotalItems(total);
-    
-    // Adjust current page if it's beyond the new total pages
-    const newTotalPages = Math.max(1, Math.ceil(total / pageSize));
-    if (currentPage > newTotalPages) {
-      goToPage(newTotalPages);
-    }
-  }, [pageSize, currentPage, goToPage]);
+  const setTotalItems = useCallback(
+    (total: number) => {
+      setServerTotalItems(total);
+
+      // Adjust current page if it's beyond the new total pages
+      const newTotalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (currentPage > newTotalPages) {
+        goToPage(newTotalPages);
+      }
+    },
+    [pageSize, currentPage, goToPage],
+  );
 
   // Return memoized result
   return useMemo(
@@ -401,7 +414,7 @@ export function usePagination<T = unknown>(
       changePageSize,
       reset,
       setTotalItems,
-    ]
+    ],
   );
 }
 
@@ -409,17 +422,20 @@ export function usePagination<T = unknown>(
  * Hook for infinite scroll pagination
  */
 export function useInfinitePagination<T>(
-  fetchMore: (page: number, pageSize: number) => Promise<{
+  fetchMore: (
+    page: number,
+    pageSize: number,
+  ) => Promise<{
     items: T[];
     hasMore: boolean;
     total?: number;
   }>,
   config: {
     initialPageSize?: number;
-  } = {}
+  } = {},
 ) {
   const { initialPageSize = 20 } = config;
-  
+
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -432,14 +448,14 @@ export function useInfinitePagination<T>(
     try {
       setLoading(true);
       setError(null);
-      
+
       const result = await fetchMore(page, initialPageSize);
-      
-      setItems(prev => [...prev, ...result.items]);
+
+      setItems((prev) => [...prev, ...result.items]);
       setHasMore(result.hasMore);
-      setPage(prev => prev + 1);
+      setPage((prev) => prev + 1);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load more'));
+      setError(err instanceof Error ? err : new Error("Failed to load more"));
     } finally {
       setLoading(false);
     }

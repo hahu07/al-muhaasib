@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 interface DialogContextValue {
   open: boolean;
@@ -49,7 +49,11 @@ interface DialogTriggerProps {
   className?: string;
 }
 
-const Dialog = ({ children, open: controlledOpen, onOpenChange }: DialogProps) => {
+const Dialog = ({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: DialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -63,10 +67,10 @@ const Dialog = ({ children, open: controlledOpen, onOpenChange }: DialogProps) =
 };
 
 const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
-  ({ children, asChild = false, className = '', ...props }, ref) => {
+  ({ children, asChild = false, className = "", ...props }, ref) => {
     const context = useContext(DialogContext);
     if (!context) {
-      throw new Error('DialogTrigger must be used within Dialog');
+      throw new Error("DialogTrigger must be used within Dialog");
     }
 
     const handleClick = () => {
@@ -78,33 +82,37 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
         children as React.ReactElement<React.HTMLAttributes<HTMLElement>>,
         {
           onClick: handleClick,
-        }
+        },
       );
     }
 
     return (
-      <button
-        ref={ref}
-        onClick={handleClick}
-        className={className}
-        {...props}
-      >
+      <button ref={ref} onClick={handleClick} className={className} {...props}>
         {children}
       </button>
     );
-  }
+  },
 );
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ children, className = '', onEscapeKeyDown, onPointerDownOutside, ...props }, ref) => {
+  (
+    {
+      children,
+      className = "",
+      onEscapeKeyDown,
+      onPointerDownOutside,
+      ...props
+    },
+    ref,
+  ) => {
     const context = useContext(DialogContext);
     if (!context) {
-      throw new Error('DialogContent must be used within Dialog');
+      throw new Error("DialogContent must be used within Dialog");
     }
 
     useEffect(() => {
       const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
+        if (event.key === "Escape") {
           if (onEscapeKeyDown) {
             onEscapeKeyDown(event);
           }
@@ -115,13 +123,13 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       };
 
       if (context.open) {
-        document.addEventListener('keydown', handleEscape);
-        document.body.style.overflow = 'hidden';
+        document.addEventListener("keydown", handleEscape);
+        document.body.style.overflow = "hidden";
       }
 
       return () => {
-        document.removeEventListener('keydown', handleEscape);
-        document.body.style.overflow = 'unset';
+        document.removeEventListener("keydown", handleEscape);
+        document.body.style.overflow = "unset";
       };
     }, [context.open, onEscapeKeyDown, context]);
 
@@ -139,33 +147,33 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     return (
       <div className={classes} onClick={handleBackdropClick}>
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 pb-20 px-4 sm:px-6 lg:px-8 overflow-y-auto">
-          <div 
-            className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full sm:p-6"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          <div
+            className="relative inline-block max-h-[90vh] w-full transform overflow-y-auto rounded-lg bg-white px-4 pt-5 pb-4 text-left align-middle shadow-xl transition-all sm:p-6 dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              ref={ref}
-              className="grid gap-4"
-              {...props}
-            >
-              {children}
-            </div>
             <button
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none z-10"
+              className="absolute top-4 right-4 z-50 rounded-sm bg-white text-gray-700 opacity-70 ring-offset-white transition-opacity hover:text-gray-900 hover:opacity-100 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none dark:bg-gray-800 dark:text-gray-300 dark:ring-offset-gray-800 dark:hover:text-white"
               onClick={() => context.onOpenChange(false)}
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </button>
+            <div ref={ref} className="grid gap-4" {...props}>
+              {children}
+            </div>
           </div>
         </div>
       </div>
     );
-  }
+  },
 );
 
-const DialogHeader = ({ children, className = '', ...props }: DialogHeaderProps) => {
+const DialogHeader = ({
+  children,
+  className = "",
+  ...props
+}: DialogHeaderProps) => {
   const classes = `flex flex-col space-y-1.5 text-center sm:text-left ${className}`;
   return (
     <div className={classes} {...props}>
@@ -174,7 +182,11 @@ const DialogHeader = ({ children, className = '', ...props }: DialogHeaderProps)
   );
 };
 
-const DialogFooter = ({ children, className = '', ...props }: DialogFooterProps) => {
+const DialogFooter = ({
+  children,
+  className = "",
+  ...props
+}: DialogFooterProps) => {
   const classes = `flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className}`;
   return (
     <div className={classes} {...props}>
@@ -184,34 +196,35 @@ const DialogFooter = ({ children, className = '', ...props }: DialogFooterProps)
 };
 
 const DialogTitle = React.forwardRef<HTMLHeadingElement, DialogTitleProps>(
-  ({ children, className = '', ...props }, ref) => {
+  ({ children, className = "", ...props }, ref) => {
     const classes = `text-lg font-semibold leading-none tracking-tight ${className}`;
     return (
       <h2 ref={ref} className={classes} {...props}>
         {children}
       </h2>
     );
-  }
+  },
 );
 
-const DialogDescription = React.forwardRef<HTMLParagraphElement, DialogDescriptionProps>(
-  ({ children, className = '', ...props }, ref) => {
-    const classes = `text-sm text-muted-foreground ${className}`;
-    return (
-      <p ref={ref} className={classes} {...props}>
-        {children}
-      </p>
-    );
-  }
-);
+const DialogDescription = React.forwardRef<
+  HTMLParagraphElement,
+  DialogDescriptionProps
+>(({ children, className = "", ...props }, ref) => {
+  const classes = `text-sm text-muted-foreground ${className}`;
+  return (
+    <p ref={ref} className={classes} {...props}>
+      {children}
+    </p>
+  );
+});
 
-Dialog.displayName = 'Dialog';
-DialogTrigger.displayName = 'DialogTrigger';
-DialogContent.displayName = 'DialogContent';
-DialogHeader.displayName = 'DialogHeader';
-DialogFooter.displayName = 'DialogFooter';
-DialogTitle.displayName = 'DialogTitle';
-DialogDescription.displayName = 'DialogDescription';
+Dialog.displayName = "Dialog";
+DialogTrigger.displayName = "DialogTrigger";
+DialogContent.displayName = "DialogContent";
+DialogHeader.displayName = "DialogHeader";
+DialogFooter.displayName = "DialogFooter";
+DialogTitle.displayName = "DialogTitle";
+DialogDescription.displayName = "DialogDescription";
 
 export {
   Dialog,

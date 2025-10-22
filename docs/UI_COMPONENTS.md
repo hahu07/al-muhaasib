@@ -5,18 +5,21 @@
 ### Form Components (`/components/ui`)
 
 #### 1. **Input Component**
+
 - Labels with required indicators
 - Error and helper text support
 - Full dark mode support
 - Validation states
 
 #### 2. **Select Component**
+
 - Options array support
 - Labels and validation
 - Dark mode styling
 - Disabled states
 
 #### 3. **Modal Component**
+
 - Backdrop with click-to-close
 - Escape key support
 - Size variants (sm, md, lg, xl, full)
@@ -24,6 +27,7 @@
 - Dark mode support
 
 #### 4. **Button Component** (already existed)
+
 - Multiple variants (primary, secondary, outline, ghost)
 - Size options (sm, md, lg)
 - Loading states
@@ -34,7 +38,9 @@
 ### Student Management (`/components/students`)
 
 #### 1. **StudentRegistrationForm**
+
 **Features:**
+
 - Split name fields (surname, firstname, middlename)
 - Guardian information collection
 - Class selection with enrollment display
@@ -44,6 +50,7 @@
 - Success/cancel callbacks
 
 **Usage:**
+
 ```typescript
 <Modal isOpen={isOpen} onClose={handleClose} title="Register New Student">
   <StudentRegistrationForm
@@ -58,7 +65,9 @@
 ```
 
 #### 2. **StudentList**
+
 **Features:**
+
 - Real-time search (name, admission number, phone)
 - Filter by class
 - Filter by payment status (all, paid, partial, pending)
@@ -70,6 +79,7 @@
 - Empty states
 
 **Data Displayed:**
+
 - Student name & admission number
 - Class assignment
 - Guardian info & contact
@@ -84,7 +94,9 @@
 ### Payment Management (`/components/payments`)
 
 #### 1. **PaymentRecordingForm**
+
 **Features:**
+
 - Student info summary display
 - Amount input with validation
 - Quick amount buttons (Full Balance, 50%, preset amounts)
@@ -97,6 +109,7 @@
 - Success/cancel callbacks
 
 **Usage:**
+
 ```typescript
 <Modal isOpen={showPayment} onClose={handleClose} title="Record Payment">
   <PaymentRecordingForm
@@ -116,6 +129,7 @@
 ## 🔄 Integration Points
 
 ### Student List → Payment Form
+
 The StudentList component has "Pay" buttons that should open the PaymentRecordingForm in a modal:
 
 ```typescript
@@ -123,8 +137,8 @@ The StudentList component has "Pay" buttons that should open the PaymentRecordin
 const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
 
 // In the Pay button click handler
-<Button 
-  size="sm" 
+<Button
+  size="sm"
   variant="primary"
   onClick={() => setSelectedStudent(student)}
 >
@@ -156,6 +170,7 @@ const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(nu
 ## 🎨 Design System
 
 ### Color Scheme
+
 - **Primary:** Blue gradient (blue-600 to purple-600)
 - **Success:** Green (paid status)
 - **Warning:** Yellow (partial payment)
@@ -163,19 +178,22 @@ const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(nu
 - **Neutral:** Gray scale
 
 ### Status Badges
+
 ```typescript
 // Payment Status Colors
-paid: green
-partial: yellow
-pending: red
+paid: green;
+partial: yellow;
+pending: red;
 ```
 
 ### Spacing
+
 - Form gaps: 4-6 (1-1.5rem)
 - Section gaps: 6 (1.5rem)
 - Card padding: 4-6 (1-1.5rem)
 
 ### Responsive Breakpoints
+
 - Mobile: default
 - Tablet: sm (640px)
 - Desktop: md (768px), lg (1024px)
@@ -185,38 +203,43 @@ pending: red
 ## 🚀 Features
 
 ### Student Registration
+
 ✅ Complete student information capture  
 ✅ Guardian details with validation  
 ✅ Class assignment with capacity check  
 ✅ Auto-enrollment update  
 ✅ Form validation  
-✅ Error handling  
+✅ Error handling
 
 ### Student Management
+
 ✅ Search functionality  
 ✅ Multi-filter support  
 ✅ Responsive table  
 ✅ Payment status tracking  
 ✅ Quick actions  
-✅ Integrated registration  
+✅ Integrated registration
 
 ### Payment Processing
+
 ✅ Amount validation  
 ✅ Quick amount presets  
 ✅ Multiple payment methods  
 ✅ Reference tracking  
 ✅ Payment notes  
-✅ Balance checking  
+✅ Balance checking
 
 ---
 
 ## 📋 Completed Features (Newly Added)
 
 ### Student Profile View ✅
+
 **Location**: `src/components/students/StudentProfile.tsx`  
 **Route**: `/students/[id]/page.tsx`
 
 **Features**:
+
 - ✅ Full student details display (class, gender, DOB, admission date, status)
 - ✅ Complete guardian information (name, phone, email, address)
 - ✅ Financial summary card (total fees, amount paid, balance)
@@ -234,6 +257,7 @@ pending: red
 - ✅ Auto-refresh after payment recording
 
 **Navigation**:
+
 ```typescript
 // From StudentList - Click "View" button
 router.push(`/students/${student.id}`);
@@ -243,6 +267,7 @@ router.push(`/students/${student.id}`);
 ```
 
 ### Payment Receipt ✅
+
 - ✅ Printable receipt component
 - ✅ School branding
 - ✅ Payment details (amount, method, reference)
@@ -252,6 +277,7 @@ router.push(`/students/${student.id}`);
 - ✅ Print-optimized styling
 
 ### Dashboard Integration ✅
+
 - ✅ Replaced mock data with real services
 - ✅ Added payment recording navigation
 - ✅ Added student quick-add navigation
@@ -260,6 +286,7 @@ router.push(`/students/${student.id}`);
 ## 📋 Pending Features
 
 ### Student Profile Enhancements
+
 - Edit student information functionality (button exists, needs implementation)
 - Print student statement
 - SMS/Email guardian from profile
@@ -270,22 +297,26 @@ router.push(`/students/${student.id}`);
 ## 🔧 Technical Details
 
 ### State Management
+
 - Local component state with `useState`
 - Service layer for data operations
 - Auth context for user info
 
 ### Data Flow
+
 ```
 User Action → Form Validation → Service Call → Database Update → UI Refresh
 ```
 
 ### Error Handling
+
 - Form validation before submission
 - Try-catch blocks for service calls
 - User-friendly error messages
 - Console logging for debugging
 
 ### Performance
+
 - Service layer caching (3-minute TTL)
 - Lazy loading for modals
 - Efficient filtering algorithms
@@ -296,6 +327,7 @@ User Action → Form Validation → Service Call → Database Update → UI Refr
 ## 📝 Usage Examples
 
 ### Complete Payment Flow
+
 ```typescript
 // 1. User clicks "Pay" button in StudentList
 // 2. Modal opens with PaymentRecordingForm
@@ -308,6 +340,7 @@ User Action → Form Validation → Service Call → Database Update → UI Refr
 ```
 
 ### Complete Registration Flow
+
 ```typescript
 // 1. User clicks "Register Student" button
 // 2. Modal opens with StudentRegistrationForm
@@ -324,7 +357,9 @@ User Action → Form Validation → Service Call → Database Update → UI Refr
 ## 🎯 Next Steps
 
 ### Phase 1 Complete! 🎉
+
 All core UI components for student management and payment processing are now implemented:
+
 - ✅ Student Registration Form
 - ✅ Student List with search & filters
 - ✅ Student Profile/Detail View
@@ -334,18 +369,21 @@ All core UI components for student management and payment processing are now imp
 - ✅ Reusable UI Components
 
 ### Phase 2 - Fee Management
+
 1. **Create Fee Structure Setup** interface
 2. **Build Fee Category Management** page
 3. **Implement Fee Assignment** workflow
 4. **Add Fee Template** system
 
 ### Phase 3 - Reporting & Analytics
+
 5. **Payment Reports** (daily, monthly, by class)
 6. **Student Fee Statements** (printable)
 7. **Financial Statements** (P&L, Balance Sheet)
 8. **Export to PDF/Excel**
 
 ### Phase 4 - Advanced Features
+
 9. **Bulk Student Import** (CSV)
 10. **SMS/Email Notifications** (payment receipts, reminders)
 11. **Advanced Search** (multiple criteria)
@@ -366,6 +404,7 @@ All core UI components for student management and payment processing are now imp
 ## 💡 Tips for Development
 
 ### Adding a New Form Field
+
 ```typescript
 // 1. Add to form state
 const [formData, setFormData] = useState({
@@ -390,13 +429,15 @@ if (!formData.newField) {
 ```
 
 ### Customizing Status Colors
+
 Edit the `getStatusColor` function in StudentList:
+
 ```typescript
 const getStatusColor = (status: string) => {
   // Add new status colors here
   switch (status) {
-    case 'yourStatus':
-      return 'bg-color text-color';
+    case "yourStatus":
+      return "bg-color text-color";
   }
 };
 ```
@@ -406,6 +447,7 @@ const getStatusColor = (status: string) => {
 ## 📞 Support
 
 For questions or issues with the UI components, check:
+
 1. Component source code with inline comments
 2. This documentation
 3. Service layer documentation (`SERVICE_LAYER.md`)

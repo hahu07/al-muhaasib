@@ -1,30 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { RefreshCw } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { studentService, classService } from '@/services';
-import { feeStructureService, studentFeeAssignmentService } from '@/services/feeService';
-import type { SchoolClass } from '@/types';
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { studentService, classService } from "@/services";
+import {
+  feeStructureService,
+  studentFeeAssignmentService,
+} from "@/services/feeService";
+import type { SchoolClass } from "@/types";
+import { StudentCreateSchema } from "@/validation/students";
 
 interface StudentRegistrationFormProps {
   onSuccess?: (studentId: string) => void;
   onCancel?: () => void;
 }
 
-export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
-  onSuccess,
-  onCancel,
-}) => {
+export const StudentRegistrationForm: React.FC<
+  StudentRegistrationFormProps
+> = ({ onSuccess, onCancel }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -32,21 +35,25 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
-    surname: '',
-    firstname: '',
-    middlename: '',
-    admissionNumber: '',
-    classId: '',
-    guardianSurname: '',
-    guardianFirstname: '',
-    guardianPhone: '',
-    guardianEmail: '',
-    guardianAddress: '',
-    guardianRelationship: 'father' as 'father' | 'mother' | 'guardian' | 'other',
-    dateOfBirth: '',
-    gender: '' as '' | 'male' | 'female',
-    admissionDate: new Date().toISOString().split('T')[0],
-    bloodGroup: '',
+    surname: "",
+    firstname: "",
+    middlename: "",
+    admissionNumber: "",
+    classId: "",
+    guardianSurname: "",
+    guardianFirstname: "",
+    guardianPhone: "",
+    guardianEmail: "",
+    guardianAddress: "",
+    guardianRelationship: "father" as
+      | "father"
+      | "mother"
+      | "guardian"
+      | "other",
+    dateOfBirth: "",
+    gender: "" as "" | "male" | "female",
+    admissionDate: new Date().toISOString().split("T")[0],
+    bloodGroup: "",
   });
 
   // Load classes on mount and when component becomes visible
@@ -61,50 +68,40 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
       loadClasses();
     };
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const loadClasses = async (forceFresh = false) => {
     try {
       setLoadingClasses(true);
-      
+
       // Note: Cache clearing is handled internally by the service
-      
+
       const activeClasses = await classService.getActiveClasses();
       setClasses(activeClasses);
     } catch (error) {
-      console.error('Error loading classes:', error);
+      console.error("Error loading classes:", error);
     } finally {
       setLoadingClasses(false);
     }
   };
 
-
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.surname.trim()) newErrors.surname = 'Surname is required';
-    if (!formData.firstname.trim()) newErrors.firstname = 'First name is required';
-    if (!formData.admissionNumber.trim()) newErrors.admissionNumber = 'Admission number is required';
-    if (!formData.classId) newErrors.classId = 'Class is required';
-    if (!formData.guardianSurname.trim()) newErrors.guardianSurname = 'Guardian surname is required';
-    if (!formData.guardianFirstname.trim()) newErrors.guardianFirstname = 'Guardian first name is required';
-    if (!formData.guardianPhone.trim()) newErrors.guardianPhone = 'Guardian phone is required';
-    if (!formData.admissionDate) newErrors.admissionDate = 'Admission date is required';
-
-    // Validate phone number
-    if (formData.guardianPhone && !/^[\d\s\-+()]+$/.test(formData.guardianPhone)) {
-      newErrors.guardianPhone = 'Invalid phone number format';
+    const parsed = StudentCreateSchema.safeParse(formData);
+    if (parsed.success) {
+      setErrors({});
+      return true;
     }
-
-    // Validate email if provided
-    if (formData.guardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guardianEmail)) {
-      newErrors.guardianEmail = 'Invalid email format';
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const path = issue.path[0];
+      if (typeof path === "string" && !fieldErrors[path]) {
+        fieldErrors[path] = issue.message;
+      }
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(fieldErrors);
+    return false;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,11 +111,11 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
 
     try {
       setLoading(true);
-      
+
       // Get selected class details
-      const selectedClass = classes.find(c => c.id === formData.classId);
+      const selectedClass = classes.find((c) => c.id === formData.classId);
       if (!selectedClass) {
-        throw new Error('Selected class not found');
+        throw new Error("Selected class not found");
       }
 
       // Create student
@@ -128,7 +125,7 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
         middlename: formData.middlename.trim() || undefined,
         admissionNumber: formData.admissionNumber.trim(),
         classId: formData.classId,
-        className: `${selectedClass.name}${selectedClass.section ? ` ${selectedClass.section}` : ''}`,
+        className: `${selectedClass.name}${selectedClass.section ? ` ${selectedClass.section}` : ""}`,
         guardianSurname: formData.guardianSurname.trim(),
         guardianFirstname: formData.guardianFirstname.trim(),
         guardianPhone: formData.guardianPhone.trim(),
@@ -152,14 +149,14 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
       try {
         const currentYear = new Date().getFullYear();
         const academicYear = `${currentYear}/${currentYear + 1}`;
-        const term = 'first' as const;
-        
+        const term = "first" as const;
+
         const feeStructure = await feeStructureService.getByClassAndTerm(
           formData.classId,
           academicYear,
-          term
+          term,
         );
-        
+
         if (feeStructure) {
           await studentFeeAssignmentService.assignFeesToStudent(
             student.id,
@@ -169,33 +166,39 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
             feeStructure.id,
             feeStructure.academicYear,
             feeStructure.term,
-            feeStructure.feeItems
+            feeStructure.feeItems,
           );
-          
-          console.log(`Automatically assigned fee structure to ${student.firstname} ${student.surname}`);
+
+          console.log(
+            `Automatically assigned fee structure to ${student.firstname} ${student.surname}`,
+          );
         } else {
-          console.log(`No fee structure found for ${selectedClass.name} - ${academicYear} ${term} term`);
+          console.log(
+            `No fee structure found for ${selectedClass.name} - ${academicYear} ${term} term`,
+          );
         }
       } catch (feeError) {
-        console.error('Error auto-assigning fee structure:', feeError);
+        console.error("Error auto-assigning fee structure:", feeError);
         // Don't fail the student registration if fee assignment fails
       }
 
       onSuccess?.(student.id);
     } catch (error) {
-      console.error('Error creating student:', error);
-      alert('Failed to register student. Please try again.');
+      console.error("Error creating student:", error);
+      alert("Failed to register student. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -203,10 +206,10 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Student Information */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Student Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Input
             label="Surname"
             name="surname"
@@ -241,33 +244,39 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Class *
                 </label>
-                <Select 
-                  value={formData.classId} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, classId: value }))}
+                <Select
+                  value={formData.classId}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, classId: value }))
+                  }
                   disabled={loadingClasses}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={
-                      loadingClasses ? 'Loading classes...' : 'Select a class'
-                    } />
+                    <SelectValue
+                      placeholder={
+                        loadingClasses ? "Loading classes..." : "Select a class"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes.map(c => (
+                    {classes.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {`${c.name}${c.section ? ` ${c.section}` : ''} (${c.currentEnrollment}/${c.capacity})`}
+                        {`${c.name}${c.section ? ` ${c.section}` : ""} (${c.currentEnrollment}/${c.capacity})`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {errors.classId && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.classId}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.classId}
+                  </p>
                 )}
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {classes.length === 0 && !loadingClasses 
-                    ? 'No classes available. Use buttons below.' 
+                  {classes.length === 0 && !loadingClasses
+                    ? "No classes available. Use buttons below."
                     : `${classes.length} classes available`}
                 </p>
               </div>
@@ -280,7 +289,9 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
                 className="mt-6 p-2"
                 title="Refresh classes list"
               >
-                <RefreshCw className={`w-4 h-4 ${loadingClasses ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${loadingClasses ? "animate-spin" : ""}`}
+                />
               </Button>
             </div>
             <div className="flex gap-2">
@@ -288,7 +299,7 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => router.push('/classes')}
+                onClick={() => router.push("/classes")}
               >
                 Manage Classes
               </Button>
@@ -302,12 +313,17 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
             onChange={handleChange}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Gender
             </label>
-            <Select 
-              value={formData.gender} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value as typeof formData.gender }))}
+            <Select
+              value={formData.gender}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  gender: value as typeof formData.gender,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select gender" />
@@ -339,10 +355,10 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
 
       {/* Guardian Information */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Guardian Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Input
             label="Guardian Surname"
             name="guardianSurname"
@@ -377,12 +393,18 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
             error={errors.guardianEmail}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Relationship
             </label>
-            <Select 
-              value={formData.guardianRelationship} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, guardianRelationship: value as typeof formData.guardianRelationship }))}
+            <Select
+              value={formData.guardianRelationship}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  guardianRelationship:
+                    value as typeof formData.guardianRelationship,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select relationship" />
@@ -407,7 +429,7 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel

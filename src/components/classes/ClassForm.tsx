@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { classService } from '@/services';
-import type { SchoolClass } from '@/types';
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { classService } from "@/services";
+import type { SchoolClass } from "@/types";
 
 interface ClassFormProps {
   classData?: SchoolClass;
@@ -21,18 +27,20 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
   const [formData, setFormData] = useState<{
     name: string;
     section: string;
-    level: 'nursery' | 'primary' | 'jss' | 'sss';
+    level: "nursery" | "primary" | "jss" | "sss";
     capacity: string;
     room: string;
     academicYear: string;
     isActive: boolean;
   }>({
-    name: String(classData?.name || ''),
-    section: String(classData?.section || ''),
-    level: classData?.level || 'primary',
-    capacity: String(classData?.capacity || ''),
-    room: String(classData?.room || ''),
-    academicYear: String(classData?.academicYear || `${currentYear}/${currentYear + 1}`),
+    name: String(classData?.name || ""),
+    section: String(classData?.section || ""),
+    level: classData?.level || "primary",
+    capacity: String(classData?.capacity || ""),
+    room: String(classData?.room || ""),
+    academicYear: String(
+      classData?.academicYear || `${currentYear}/${currentYear + 1}`,
+    ),
     isActive: Boolean(classData?.isActive ?? true),
   });
 
@@ -42,26 +50,30 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!(formData.name || '').trim()) {
-      newErrors.name = 'Class name is required';
+    if (!(formData.name || "").trim()) {
+      newErrors.name = "Class name is required";
     }
 
     if (!formData.level) {
-      newErrors.level = 'Level is required';
+      newErrors.level = "Level is required";
     }
 
     // Only validate capacity if provided
     if (formData.capacity) {
       const capacity = parseInt(formData.capacity);
       if (isNaN(capacity) || capacity < 1) {
-        newErrors.capacity = 'Capacity must be at least 1 if specified';
-      } else if (isEditing && classData && capacity < classData.currentEnrollment) {
+        newErrors.capacity = "Capacity must be at least 1 if specified";
+      } else if (
+        isEditing &&
+        classData &&
+        capacity < classData.currentEnrollment
+      ) {
         newErrors.capacity = `Capacity cannot be less than current enrollment (${classData.currentEnrollment})`;
       }
     }
 
-    if (!(formData.academicYear || '').trim()) {
-      newErrors.academicYear = 'Academic year is required';
+    if (!(formData.academicYear || "").trim()) {
+      newErrors.academicYear = "Academic year is required";
     }
 
     setErrors(newErrors);
@@ -77,12 +89,12 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
       setLoading(true);
 
       const classPayload = {
-        name: (formData.name || '').trim(),
-        section: (formData.section || '').trim() || undefined,
+        name: (formData.name || "").trim(),
+        section: (formData.section || "").trim() || undefined,
         level: formData.level,
         capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
-        room: (formData.room || '').trim() || undefined,
-        academicYear: (formData.academicYear || '').trim(),
+        room: (formData.room || "").trim() || undefined,
+        academicYear: (formData.academicYear || "").trim(),
         isActive: formData.isActive,
         currentEnrollment: classData?.currentEnrollment || 0,
         teacherId: classData?.teacherId,
@@ -91,30 +103,36 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
       if (isEditing && classData) {
         await classService.update(classData.id, classPayload);
       } else {
-        await classService.create(classPayload as Omit<SchoolClass, 'id' | 'createdAt' | 'updatedAt'>);
+        await classService.create(
+          classPayload as Omit<SchoolClass, "id" | "createdAt" | "updatedAt">,
+        );
       }
 
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving class:', error);
-      alert(`Failed to ${isEditing ? 'update' : 'create'} class. Please try again.`);
+      console.error("Error saving class:", error);
+      alert(
+        `Failed to ${isEditing ? "update" : "create"} class. Please try again.`,
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -122,7 +140,7 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Class Details */}
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Input
             label="Class Name"
             name="name"
@@ -145,22 +163,25 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="w-full">
             <Label htmlFor="level">
               Level
-              <span className="text-red-500 ml-1">*</span>
+              <span className="ml-1 text-red-500">*</span>
             </Label>
-            <Select 
-              value={formData.level} 
+            <Select
+              value={formData.level}
               onValueChange={(value) => {
-                setFormData(prev => ({ ...prev, level: value as 'nursery' | 'primary' | 'jss' | 'sss' }));
+                setFormData((prev) => ({
+                  ...prev,
+                  level: value as "nursery" | "primary" | "jss" | "sss",
+                }));
                 if (errors.level) {
-                  setErrors(prev => ({ ...prev, level: '' }));
+                  setErrors((prev) => ({ ...prev, level: "" }));
                 }
               }}
             >
-              <SelectTrigger className={errors.level ? 'border-red-500' : ''}>
+              <SelectTrigger className={errors.level ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select level" />
               </SelectTrigger>
               <SelectContent>
@@ -171,7 +192,9 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
               </SelectContent>
             </Select>
             {errors.level && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.level}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.level}
+              </p>
             )}
           </div>
 
@@ -187,12 +210,12 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
             helperText={
               isEditing && classData
                 ? `Current enrollment: ${classData.currentEnrollment}. Leave empty for unlimited capacity.`
-                : 'Maximum number of students. Leave empty for unlimited capacity.'
+                : "Maximum number of students. Leave empty for unlimited capacity."
             }
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Input
             label="Room/Location (Optional)"
             name="room"
@@ -216,18 +239,18 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
         </div>
 
         {/* Active Status Toggle */}
-        <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
           <input
             type="checkbox"
             id="isActive"
             name="isActive"
             checked={formData.isActive}
             onChange={handleChange}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            className="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
           />
           <label
             htmlFor="isActive"
-            className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer"
+            className="cursor-pointer text-sm font-medium text-gray-900 dark:text-gray-100"
           >
             Active Class
           </label>
@@ -238,18 +261,23 @@ export function ClassForm({ classData, onSuccess, onCancel }: ClassFormProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+      <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
           Cancel
         </Button>
         <Button type="submit" variant="primary" disabled={loading}>
           {loading ? (
             <>
-              <span className="animate-spin mr-2">⏳</span>
-              {isEditing ? 'Updating...' : 'Creating...'}
+              <span className="mr-2 animate-spin">⏳</span>
+              {isEditing ? "Updating..." : "Creating..."}
             </>
           ) : (
-            <>{isEditing ? 'Update Class' : 'Create Class'}</>
+            <>{isEditing ? "Update Class" : "Create Class"}</>
           )}
         </Button>
       </div>

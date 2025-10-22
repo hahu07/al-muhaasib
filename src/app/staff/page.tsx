@@ -1,5 +1,5 @@
-import { Auth } from '@/components/home/auth';
-import StaffRouter from '@/components/staff/StaffRouter';
+import { Auth } from "@/components/home/auth";
+import StaffRouter from "@/components/staff/StaffRouter";
 
 export default function StaffPage() {
   return (

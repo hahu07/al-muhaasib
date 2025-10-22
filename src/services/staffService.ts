@@ -1,6 +1,16 @@
-import { BaseDataService, COLLECTIONS } from './dataService';
-import type { StaffMember, SalaryPayment, PaymentAllowance, PaymentDeduction } from '@/types';
-import { nanoid } from 'nanoid';
+import { BaseDataService, COLLECTIONS } from "./dataService";
+import type {
+  StaffMember,
+  SalaryPayment,
+  PaymentAllowance,
+  PaymentDeduction,
+} from "@/types";
+import { customAlphabet } from "nanoid";
+import { autoPostingService } from "./autoPostingService";
+import { z } from "zod";
+
+// Create alphanumeric nanoid generator for salary references (backend validation requires alphanumeric only)
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
 
 export class StaffService extends BaseDataService<StaffMember> {
   constructor() {
@@ -12,15 +22,17 @@ export class StaffService extends BaseDataService<StaffMember> {
    */
   async getActiveStaff(): Promise<StaffMember[]> {
     const staff = await this.list();
-    return staff.filter(s => s.isActive);
+    return staff.filter((s) => s.isActive);
   }
 
   /**
    * Get staff by employment type
    */
-  async getByEmploymentType(type: StaffMember['employmentType']): Promise<StaffMember[]> {
+  async getByEmploymentType(
+    type: StaffMember["employmentType"],
+  ): Promise<StaffMember[]> {
     const staff = await this.list();
-    return staff.filter(s => s.employmentType === type && s.isActive);
+    return staff.filter((s) => s.employmentType === type && s.isActive);
   }
 
   /**
@@ -28,7 +40,7 @@ export class StaffService extends BaseDataService<StaffMember> {
    */
   async getByDepartment(department: string): Promise<StaffMember[]> {
     const staff = await this.list();
-    return staff.filter(s => s.department === department && s.isActive);
+    return staff.filter((s) => s.department === department && s.isActive);
   }
 
   /**
@@ -36,7 +48,7 @@ export class StaffService extends BaseDataService<StaffMember> {
    */
   async getByStaffNumber(staffNumber: string): Promise<StaffMember | null> {
     const staff = await this.list();
-    return staff.find(s => s.staffNumber === staffNumber) || null;
+    return staff.find((s) => s.staffNumber === staffNumber) || null;
   }
 
   /**
@@ -58,7 +70,8 @@ export class StaffService extends BaseDataService<StaffMember> {
    */
   calculateTotalCompensation(staff: StaffMember): number {
     const basicSalary = staff.basicSalary;
-    const allowancesTotal = staff.allowances?.reduce((sum, a) => sum + a.amount, 0) || 0;
+    const allowancesTotal =
+      staff.allowances?.reduce((sum, a) => sum + a.amount, 0) || 0;
     return basicSalary + allowancesTotal;
   }
 
@@ -73,80 +86,84 @@ export class StaffService extends BaseDataService<StaffMember> {
 
     const sampleStaff = [
       {
-        staffNumber: 'STF001',
-        firstname: 'John',
-        surname: 'Adebayo',
-        position: 'Mathematics Teacher',
-        department: 'Science Department',
-        employmentType: 'full-time' as const,
-        employmentDate: '2022-09-01',
+        staffNumber: "STF001",
+        firstname: "John",
+        surname: "Adebayo",
+        position: "Mathematics Teacher",
+        department: "Science Department",
+        employmentType: "full-time" as const,
+        employmentDate: "2022-09-01",
         basicSalary: 150000,
-        phone: '08012345678',
-        email: 'john.adebayo@school.edu',
-        address: '123 Lagos Street, Lagos',
-        bankName: 'First Bank',
-        accountNumber: '1234567890',
+        phone: "08012345678",
+        email: "john.adebayo@school.edu",
+        address: "123 Lagos Street, Lagos",
+        bankName: "First Bank",
+        accountNumber: "1234567890",
         allowances: [
-          { name: 'Transport Allowance', amount: 20000, isRecurring: true },
-          { name: 'Teaching Allowance', amount: 15000, isRecurring: true }
+          { name: "Transport Allowance", amount: 20000, isRecurring: true },
+          { name: "Teaching Allowance", amount: 15000, isRecurring: true },
         ],
-        isActive: true
+        isActive: true,
       },
       {
-        staffNumber: 'STF002',
-        firstname: 'Sarah',
-        surname: 'Okonkwo',
-        position: 'English Teacher',
-        department: 'Arts Department',
-        employmentType: 'full-time' as const,
-        employmentDate: '2021-01-15',
+        staffNumber: "STF002",
+        firstname: "Sarah",
+        surname: "Okonkwo",
+        position: "English Teacher",
+        department: "Arts Department",
+        employmentType: "full-time" as const,
+        employmentDate: "2021-01-15",
         basicSalary: 140000,
-        phone: '08098765432',
-        email: 'sarah.okonkwo@school.edu',
-        address: '456 Abuja Road, Abuja',
-        bankName: 'GTBank',
-        accountNumber: '9876543210',
+        phone: "08098765432",
+        email: "sarah.okonkwo@school.edu",
+        address: "456 Abuja Road, Abuja",
+        bankName: "GTBank",
+        accountNumber: "9876543210",
         allowances: [
-          { name: 'Transport Allowance', amount: 20000, isRecurring: true }
+          { name: "Transport Allowance", amount: 20000, isRecurring: true },
         ],
-        isActive: true
+        isActive: true,
       },
       {
-        staffNumber: 'STF003',
-        firstname: 'Ahmed',
-        surname: 'Hassan',
-        position: 'Physics Teacher',
-        department: 'Science Department',
-        employmentType: 'part-time' as const,
-        employmentDate: '2023-03-20',
+        staffNumber: "STF003",
+        firstname: "Ahmed",
+        surname: "Hassan",
+        position: "Physics Teacher",
+        department: "Science Department",
+        employmentType: "part-time" as const,
+        employmentDate: "2023-03-20",
         basicSalary: 80000,
-        phone: '08055443322',
-        email: 'ahmed.hassan@school.edu',
-        address: '789 Kano Close, Kano',
-        bankName: 'UBA',
-        accountNumber: '5555666677',
+        phone: "08055443322",
+        email: "ahmed.hassan@school.edu",
+        address: "789 Kano Close, Kano",
+        bankName: "UBA",
+        accountNumber: "5555666677",
         allowances: [],
-        isActive: false
+        isActive: false,
       },
       {
-        staffNumber: 'STF004',
-        firstname: 'Grace',
-        surname: 'Eze',
-        position: 'School Secretary',
-        department: 'Administration',
-        employmentType: 'full-time' as const,
-        employmentDate: '2020-06-10',
+        staffNumber: "STF004",
+        firstname: "Grace",
+        surname: "Eze",
+        position: "School Secretary",
+        department: "Administration",
+        employmentType: "full-time" as const,
+        employmentDate: "2020-06-10",
         basicSalary: 120000,
-        phone: '08077889900',
-        email: 'grace.eze@school.edu',
-        address: '321 Enugu Avenue, Enugu',
-        bankName: 'Zenith Bank',
-        accountNumber: '1111222233',
+        phone: "08077889900",
+        email: "grace.eze@school.edu",
+        address: "321 Enugu Avenue, Enugu",
+        bankName: "Zenith Bank",
+        accountNumber: "1111222233",
         allowances: [
-          { name: 'Administrative Allowance', amount: 25000, isRecurring: true }
+          {
+            name: "Administrative Allowance",
+            amount: 25000,
+            isRecurring: true,
+          },
         ],
-        isActive: true
-      }
+        isActive: true,
+      },
     ];
 
     for (const staff of sampleStaff) {
@@ -165,14 +182,15 @@ export class StaffService extends BaseDataService<StaffMember> {
     totalMonthlySalaries: number;
   }> {
     const allStaff = await this.list();
-    const activeStaff = allStaff.filter(s => s.isActive);
+    const activeStaff = allStaff.filter((s) => s.isActive);
 
     const byEmploymentType: Record<string, number> = {};
     const byDepartment: Record<string, number> = {};
 
-    activeStaff.forEach(s => {
+    activeStaff.forEach((s) => {
       // By employment type
-      byEmploymentType[s.employmentType] = (byEmploymentType[s.employmentType] || 0) + 1;
+      byEmploymentType[s.employmentType] =
+        (byEmploymentType[s.employmentType] || 0) + 1;
 
       // By department
       if (s.department) {
@@ -182,7 +200,7 @@ export class StaffService extends BaseDataService<StaffMember> {
 
     const totalMonthlySalaries = activeStaff.reduce(
       (sum, s) => sum + this.calculateTotalCompensation(s),
-      0
+      0,
     );
 
     return {
@@ -212,9 +230,13 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
     totalDeductions: number;
     netPay: number;
   } {
-    const totalAllowances = data.allowances.reduce((sum, a) => sum + a.amount, 0);
+    const totalAllowances = data.allowances.reduce(
+      (sum, a) => sum + a.amount,
+      0,
+    );
     const totalGross = data.basicSalary + totalAllowances;
-    const totalDeductions = data.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0;
+    const totalDeductions =
+      data.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0;
     const netPay = totalGross - totalDeductions;
 
     return {
@@ -236,11 +258,36 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
     basicSalary: number;
     allowances: PaymentAllowance[];
     deductions?: PaymentDeduction[];
-    paymentMethod: SalaryPayment['paymentMethod'];
+    paymentMethod: SalaryPayment["paymentMethod"];
     paymentDate: string;
     recordedBy: string;
   }): Promise<SalaryPayment> {
-    const reference = `SAL-${data.year}-${data.month}-${nanoid(6).toUpperCase()}`;
+    // Basic input validation (non-authoritative)
+    const Schema = z.object({
+      staffId: z.string().min(1),
+      staffName: z.string().min(1),
+      staffNumber: z.string().min(1),
+      month: z.string().regex(/^(0[1-9]|1[0-2])$/),
+      year: z.string().regex(/^\d{4}$/),
+      basicSalary: z.number().nonnegative(),
+      allowances: z.array(
+        z.object({ name: z.string(), amount: z.number().nonnegative() }),
+      ),
+      deductions: z
+        .array(z.object({ name: z.string(), amount: z.number().nonnegative() }))
+        .optional(),
+      paymentMethod: z.enum(["bank_transfer", "cash", "cheque"]),
+      paymentDate: z.string().refine((v) => !Number.isNaN(Date.parse(v))),
+      recordedBy: z.string().min(1),
+    });
+    const parsed = Schema.safeParse(data);
+    if (!parsed.success) {
+      throw new Error(
+        parsed.error.issues[0]?.message || "Invalid salary payment data",
+      );
+    }
+
+    const reference = `SAL-${data.year}-${data.month}-${nanoid()}`;
 
     const calculated = this.calculateSalary({
       basicSalary: data.basicSalary,
@@ -248,13 +295,62 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
       deductions: data.deductions,
     });
 
-    return this.create({
+    // Additional policy checks
+    if (calculated.netPay < 0) {
+      throw new Error(
+        "Net pay cannot be negative (deductions exceed gross pay)",
+      );
+    }
+    if (data.paymentMethod === "cash" && calculated.netPay > 100_000) {
+      throw new Error("Cash payments cannot exceed ₦100,000");
+    }
+    if (calculated.netPay > 500_000 && data.paymentMethod !== "bank_transfer") {
+      throw new Error("Salary payments over ₦500,000 must use bank transfer");
+    }
+
+    const payment = await this.create({
       ...data,
       deductions: data.deductions || [],
       ...calculated,
       reference,
-      status: 'pending',
+      status: "pending",
     });
+
+    // Auto-post journal entry for the salary payment
+    try {
+      // Calculate tax amount (PAYE) from deductions
+      const taxAmount = (data.deductions || []).reduce((sum, d) => {
+        if (
+          d.name.toLowerCase().includes("paye") ||
+          d.name.toLowerCase().includes("tax")
+        ) {
+          return sum + d.amount;
+        }
+        return sum;
+      }, 0);
+
+      await autoPostingService.postSalaryPayment(
+        data.staffName,
+        data.staffNumber,
+        calculated.totalGross,
+        calculated.totalDeductions,
+        calculated.netPay,
+        taxAmount,
+        data.paymentMethod,
+        {
+          description: `Salary payment for ${data.staffName} - ${data.month}/${data.year}`,
+          reference: reference,
+          transactionDate: data.paymentDate,
+          createdBy: data.recordedBy,
+          autoPost: true,
+        },
+      );
+    } catch (error) {
+      console.error("Failed to auto-post salary payment journal entry:", error);
+      // Don't fail the payment if journal entry fails
+    }
+
+    return payment;
   }
 
   /**
@@ -262,31 +358,37 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
    */
   async getByStaffId(staffId: string): Promise<SalaryPayment[]> {
     const payments = await this.list();
-    return payments.filter(p => p.staffId === staffId);
+    return payments.filter((p) => p.staffId === staffId);
   }
 
   /**
    * Get salary payments by month and year
    */
-  async getByMonthAndYear(month: string, year: string): Promise<SalaryPayment[]> {
+  async getByMonthAndYear(
+    month: string,
+    year: string,
+  ): Promise<SalaryPayment[]> {
     const payments = await this.list();
-    return payments.filter(p => p.month === month && p.year === year);
+    return payments.filter((p) => p.month === month && p.year === year);
   }
 
   /**
    * Get payments by status
    */
-  async getByStatus(status: SalaryPayment['status']): Promise<SalaryPayment[]> {
+  async getByStatus(status: SalaryPayment["status"]): Promise<SalaryPayment[]> {
     const payments = await this.list();
-    return payments.filter(p => p.status === status);
+    return payments.filter((p) => p.status === status);
   }
 
   /**
    * Approve salary payment
    */
-  async approveSalaryPayment(paymentId: string, approvedBy: string): Promise<SalaryPayment> {
+  async approveSalaryPayment(
+    paymentId: string,
+    approvedBy: string,
+  ): Promise<SalaryPayment> {
     return this.update(paymentId, {
-      status: 'approved',
+      status: "approved",
       approvedBy,
     });
   }
@@ -296,24 +398,31 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
    */
   async markAsPaid(paymentId: string): Promise<SalaryPayment> {
     return this.update(paymentId, {
-      status: 'paid',
+      status: "paid",
     });
   }
 
   /**
    * Check if staff has been paid for a month
    */
-  async hasBeenPaid(staffId: string, month: string, year: string): Promise<boolean> {
+  async hasBeenPaid(
+    staffId: string,
+    month: string,
+    year: string,
+  ): Promise<boolean> {
     const payments = await this.getByStaffId(staffId);
     return payments.some(
-      p => p.month === month && p.year === year && p.status === 'paid'
+      (p) => p.month === month && p.year === year && p.status === "paid",
     );
   }
 
   /**
    * Get payroll summary for a month
    */
-  async getPayrollSummary(month: string, year: string): Promise<{
+  async getPayrollSummary(
+    month: string,
+    year: string,
+  ): Promise<{
     totalStaff: number;
     totalGross: number;
     totalDeductions: number;
@@ -327,16 +436,20 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
 
     const totalStaff = payments.length;
     const totalGross = payments.reduce((sum, p) => sum + p.totalGross, 0);
-    const totalDeductions = payments.reduce((sum, p) => sum + p.totalDeductions, 0);
+    const totalDeductions = payments.reduce(
+      (sum, p) => sum + p.totalDeductions,
+      0,
+    );
     const totalNetPay = payments.reduce((sum, p) => sum + p.netPay, 0);
 
-    const pending = payments.filter(p => p.status === 'pending').length;
-    const approved = payments.filter(p => p.status === 'approved').length;
-    const paid = payments.filter(p => p.status === 'paid').length;
+    const pending = payments.filter((p) => p.status === "pending").length;
+    const approved = payments.filter((p) => p.status === "approved").length;
+    const paid = payments.filter((p) => p.status === "paid").length;
 
     // By payment method
-    const byPaymentMethod: Record<string, { count: number; amount: number }> = {};
-    payments.forEach(p => {
+    const byPaymentMethod: Record<string, { count: number; amount: number }> =
+      {};
+    payments.forEach((p) => {
       if (!byPaymentMethod[p.paymentMethod]) {
         byPaymentMethod[p.paymentMethod] = { count: 0, amount: 0 };
       }
@@ -359,7 +472,10 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
   /**
    * Get staff payment history
    */
-  async getStaffPaymentHistory(staffId: string, limit?: number): Promise<SalaryPayment[]> {
+  async getStaffPaymentHistory(
+    staffId: string,
+    limit?: number,
+  ): Promise<SalaryPayment[]> {
     const payments = await this.getByStaffId(staffId);
     const sorted = payments.sort((a, b) => {
       const dateA = `${a.year}-${a.month}`;
@@ -373,18 +489,26 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
   /**
    * Calculate year-to-date (YTD) earnings
    */
-  async calculateYTDEarnings(staffId: string, year: string): Promise<{
+  async calculateYTDEarnings(
+    staffId: string,
+    year: string,
+  ): Promise<{
     totalGross: number;
     totalDeductions: number;
     totalNetPay: number;
     monthsPaid: number;
   }> {
     const payments = await this.getByStaffId(staffId);
-    const yearPayments = payments.filter(p => p.year === year && p.status === 'paid');
+    const yearPayments = payments.filter(
+      (p) => p.year === year && p.status === "paid",
+    );
 
     return {
       totalGross: yearPayments.reduce((sum, p) => sum + p.totalGross, 0),
-      totalDeductions: yearPayments.reduce((sum, p) => sum + p.totalDeductions, 0),
+      totalDeductions: yearPayments.reduce(
+        (sum, p) => sum + p.totalDeductions,
+        0,
+      ),
       totalNetPay: yearPayments.reduce((sum, p) => sum + p.netPay, 0),
       monthsPaid: yearPayments.length,
     };
@@ -393,9 +517,12 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
   /**
    * Get salary payments by date range
    */
-  async getSalaryPaymentsByDateRange(startDate: string, endDate: string): Promise<SalaryPayment[]> {
+  async getSalaryPaymentsByDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<SalaryPayment[]> {
     const payments = await this.list();
-    return payments.filter(p => {
+    return payments.filter((p) => {
       const paymentDate = p.paymentDate;
       return paymentDate >= startDate && paymentDate <= endDate;
     });
@@ -411,13 +538,23 @@ export class SalaryPaymentService extends BaseDataService<SalaryPayment> {
   }> {
     const payment = await this.getById(paymentId);
     if (!payment) {
-      throw new Error('Salary payment not found');
+      throw new Error("Salary payment not found");
     }
 
-    const payslipNumber = `PS-${payment.reference.replace('SAL-', '')}`;
+    const payslipNumber = `PS-${payment.reference.replace("SAL-", "")}`;
     const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     const monthName = monthNames[parseInt(payment.month) - 1] || payment.month;
     const formattedPeriod = `${monthName} ${payment.year}`;
@@ -438,9 +575,12 @@ export const salaryPaymentService = new SalaryPaymentService();
 class CombinedStaffService {
   staffService = staffService;
   salaryPaymentService = salaryPaymentService;
-  
+
   async getSalaryPaymentsByDateRange(startDate: string, endDate: string) {
-    return this.salaryPaymentService.getSalaryPaymentsByDateRange(startDate, endDate);
+    return this.salaryPaymentService.getSalaryPaymentsByDateRange(
+      startDate,
+      endDate,
+    );
   }
 }
 

@@ -19,16 +19,20 @@ When you click the theme toggle button (sun/moon icon in the top-right corner):
 ## How to Test
 
 ### Option 1: Development Server
+
 ```bash
 npm run dev
 ```
+
 Then open `http://localhost:3000` (or the port shown) in your browser.
 
 ### Option 2: Production Build (Recommended)
+
 ```bash
 # Build is already done, just serve the files
 python3 -m http.server --directory out 8080
 ```
+
 Then open `http://localhost:8080` in your browser.
 
 ## Debugging
@@ -37,9 +41,11 @@ If the theme toggle still doesn't work, open browser DevTools (F12) and:
 
 1. Go to **Console** tab
 2. Type this and press Enter:
+
    ```javascript
-   document.documentElement.className
+   document.documentElement.className;
    ```
+
    You should see either "dark" or "light"
 
 3. Click the theme toggle button
@@ -47,8 +53,9 @@ If the theme toggle still doesn't work, open browser DevTools (F12) and:
 
 5. Check if CSS variables are being applied:
    ```javascript
-   getComputedStyle(document.body).backgroundColor
+   getComputedStyle(document.body).backgroundColor;
    ```
+
    - Dark mode: should be "rgb(0, 0, 0)"
    - Light mode: should be "rgb(255, 255, 255)"
 
@@ -58,12 +65,12 @@ If automatic toggle doesn't work, try manually in the browser console:
 
 ```javascript
 // Switch to light mode
-document.documentElement.classList.remove('dark');
-document.documentElement.classList.add('light');
+document.documentElement.classList.remove("dark");
+document.documentElement.classList.add("light");
 
-// Switch to dark mode  
-document.documentElement.classList.remove('light');
-document.documentElement.classList.add('dark');
+// Switch to dark mode
+document.documentElement.classList.remove("light");
+document.documentElement.classList.add("dark");
 ```
 
 If this works but the button doesn't, it's a JavaScript/React issue.

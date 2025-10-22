@@ -1,9 +1,11 @@
 # Bug Fix - Class Select Field in Student Registration Form
 
 ## Issue
+
 The class selection dropdown in the Student Registration Form was not working properly. Users couldn't see or select classes when registering a new student.
 
 ## Date Fixed
+
 October 12, 2025
 
 ## Root Causes
@@ -15,9 +17,11 @@ October 12, 2025
 ## Files Modified
 
 ### 1. StudentRegistrationForm.tsx
+
 **Location**: `src/components/students/StudentRegistrationForm.tsx`
 
 **Changes**:
+
 - Added `seedClasses` import from utils
 - Modified class select options to include explicit empty option
 - Added loading state label: "Loading classes..." vs "Select a class"
@@ -26,17 +30,21 @@ October 12, 2025
 - Added "Create Sample Classes" button that appears when no classes exist
 
 ### 2. Select Component
+
 **Location**: `src/components/ui/select.tsx`
 
 **Changes**:
+
 - Updated to check if options already contain empty value
 - Only adds default "Select..." option if none exists
 - Prevents duplicate placeholder options
 
 ### 3. Seed Data Utility (NEW)
+
 **Location**: `src/utils/seedData.ts`
 
 **Created**:
+
 - `seedClasses()` - Creates 20 sample classes covering Nigerian school system
 - `seedAll()` - Master function to seed all data
 - `clearAllData()` - Utility to clear seeded data
@@ -46,6 +54,7 @@ October 12, 2025
 ### Class Select Fix
 
 **Before:**
+
 ```typescript
 <Select
   options={classes.map(c => ({
@@ -57,6 +66,7 @@ October 12, 2025
 ```
 
 **After:**
+
 ```typescript
 <Select
   options={[
@@ -79,14 +89,15 @@ October 12, 2025
 
 The seed data creates **20 classes** covering the Nigerian education system:
 
-| Level | Classes | Details |
-|-------|---------|---------|
-| **Nursery** | 2 | Nursery 1-2 (25 capacity each) |
-| **Primary** | 6 | Primary 1-6 (30-35 capacity each) |
-| **JSS** | 6 | JSS 1-3, Sections A & B (40 capacity each) |
-| **SSS** | 6 | SSS 1-3, Science & Arts (35 capacity each) |
+| Level       | Classes | Details                                    |
+| ----------- | ------- | ------------------------------------------ |
+| **Nursery** | 2       | Nursery 1-2 (25 capacity each)             |
+| **Primary** | 6       | Primary 1-6 (30-35 capacity each)          |
+| **JSS**     | 6       | JSS 1-3, Sections A & B (40 capacity each) |
+| **SSS**     | 6       | SSS 1-3, Science & Arts (35 capacity each) |
 
 All classes:
+
 - Are set to active status
 - Have zero initial enrollment
 - Show capacity in dropdown
@@ -96,12 +107,14 @@ All classes:
 ## User Experience Improvements
 
 ### Before Fix
+
 1. ❌ Dropdown appears empty
 2. ❌ No indication why it's empty
 3. ❌ User must manually create classes elsewhere
 4. ❌ Confusing UX
 
 ### After Fix
+
 1. ✅ Loading state shows "Loading classes..."
 2. ✅ Empty state shows helpful message
 3. ✅ One-click button to create sample classes
@@ -114,6 +127,7 @@ All classes:
 ### Manual Test Steps
 
 1. **Test Empty State**
+
    ```bash
    # Start fresh (clear data if needed)
    npm run dev
@@ -125,6 +139,7 @@ All classes:
    ```
 
 2. **Test Class Selection**
+
    ```bash
    # With classes loaded
    # Open registration form
@@ -145,6 +160,7 @@ All classes:
 ## Technical Details
 
 ### Select Component Logic
+
 ```typescript
 // Only add default option if not already in options array
 {!options.some(opt => opt.value === '') && (
@@ -158,11 +174,12 @@ All classes:
 ```
 
 ### Seed Function Safety
+
 ```typescript
 // Check if classes already exist before seeding
 const existingClasses = await classService.list();
 if (existingClasses.length > 0) {
-  console.log('Classes already exist. Skipping seed.');
+  console.log("Classes already exist. Skipping seed.");
   return;
 }
 ```
@@ -178,6 +195,7 @@ if (existingClasses.length > 0) {
 ## Future Enhancements
 
 ### Phase 2 Considerations
+
 1. **Class Management UI**: Dedicated page to create/edit/delete classes
 2. **Bulk Import**: CSV import for classes
 3. **Academic Year Management**: Switch between years
@@ -185,6 +203,7 @@ if (existingClasses.length > 0) {
 5. **Capacity Warnings**: Alert when class is near/at capacity
 
 ### Possible Improvements
+
 ```typescript
 // Option 1: Auto-seed on first run
 useEffect(() => {
@@ -194,7 +213,7 @@ useEffect(() => {
 }, []);
 
 // Option 2: Seed data wizard
-<SeedDataWizard 
+<SeedDataWizard
   options={['classes', 'fees', 'staff']}
   onComplete={loadAllData}
 />
@@ -230,6 +249,7 @@ useEffect(() => {
 ## Usage Instructions
 
 ### For New Users
+
 1. Open student registration form
 2. If no classes exist, click "Create Sample Classes"
 3. Confirm the dialog
@@ -238,9 +258,10 @@ useEffect(() => {
 6. Continue with registration
 
 ### For Developers
+
 ```typescript
 // Import seed functions
-import { seedClasses, seedAll, clearAllData } from '@/utils/seedData';
+import { seedClasses, seedAll, clearAllData } from "@/utils/seedData";
 
 // Seed classes only
 await seedClasses();
@@ -253,6 +274,7 @@ await clearAllData();
 ```
 
 ### Sample Classes Structure
+
 ```
 Nursery: Nursery 1, Nursery 2
 Primary: Primary 1, Primary 2, Primary 3, Primary 4, Primary 5, Primary 6
