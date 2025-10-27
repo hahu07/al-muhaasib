@@ -84,7 +84,7 @@ export default function StaffPenaltyModal({
       setPenalties(
         staffPenalties.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(Number(b.createdAt) / 1_000_000).getTime() - new Date(Number(a.createdAt) / 1_000_000).getTime(),
         ),
       );
     } catch (error) {
@@ -314,56 +314,62 @@ export default function StaffPenaltyModal({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Stats */}
+          {/* Summary Stats */}
           <div className="grid grid-cols-4 gap-4">
-            <div className="rounded-lg border bg-red-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Total Deducted</p>
-              <p className="text-2xl font-bold text-red-700">
-                {formatCurrency(totalDeducted)}
+            <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4 text-center shadow-sm dark:border-red-800 dark:bg-red-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Deducted</p>
+              <p className="mt-1 text-2xl font-bold text-red-700 dark:text-red-400">
+                ₦{totalDeducted.toLocaleString()}
               </p>
             </div>
-            <div className="rounded-lg border bg-yellow-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-700">
+            <div className="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4 text-center shadow-sm dark:border-yellow-800 dark:bg-yellow-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending</p>
+              <p className="mt-1 text-2xl font-bold text-yellow-700 dark:text-yellow-400">
                 {pendingPenalties}
               </p>
             </div>
-            <div className="rounded-lg border bg-green-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Waived</p>
-              <p className="text-2xl font-bold text-green-700">
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 text-center shadow-sm dark:border-green-800 dark:bg-green-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Waived</p>
+              <p className="mt-1 text-2xl font-bold text-green-700 dark:text-green-400">
                 {waivedPenalties}
               </p>
             </div>
-            <div className="rounded-lg border bg-blue-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Total Penalties</p>
-              <p className="text-2xl font-bold text-blue-700">
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4 text-center shadow-sm dark:border-blue-800 dark:bg-blue-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Penalties</p>
+              <p className="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-400">
                 {penalties.length}
               </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               onClick={() => setShowNewPenaltyForm(!showNewPenaltyForm)}
               disabled={loading}
               variant="destructive"
+              size="lg"
+              className="w-full sm:w-auto"
             >
-              {showNewPenaltyForm ? "Cancel" : "Issue Penalty"}
+              <AlertCircle className="mr-2 h-4 w-4" />
+              {showNewPenaltyForm ? "Cancel" : "Issue New Penalty"}
             </Button>
             <div className="flex gap-2">
+              <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                Filter:
+              </label>
               <Select
                 value={filterStatus}
                 onValueChange={(v) => setFilterStatus(v as 'all' | 'pending' | 'deducted' | 'waived')}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="deducted">Deducted</SelectItem>
-                  <SelectItem value="waived">Waived</SelectItem>
+                  <SelectItem value="pending">🕒 Pending</SelectItem>
+                  <SelectItem value="deducted">✓ Deducted</SelectItem>
+                  <SelectItem value="waived">✕ Waived</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -373,9 +379,10 @@ export default function StaffPenaltyModal({
           {showNewPenaltyForm && (
             <form
               onSubmit={handleCreatePenalty}
-              className="rounded-lg border border-red-200 bg-red-50 p-4"
+              className="rounded-lg border-2 border-red-200 bg-gradient-to-br from-red-50 to-white p-6 shadow-md dark:border-red-800 dark:from-red-900/20 dark:to-gray-900"
             >
-              <h3 className="mb-4 font-semibold text-red-900">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-red-900 dark:text-red-100">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 {editingPenalty ? "Edit Penalty" : "Issue New Penalty"}
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -500,10 +507,15 @@ export default function StaffPenaltyModal({
 
           {/* Penalty List */}
           <div className="space-y-4">
-            <h3 className="font-semibold">
-              Penalty History ({filteredPenalties.length}
-              {filterStatus !== "all" && ` ${filterStatus}`})
-            </h3>
+            <div className="flex items-center gap-2 border-b pb-2">
+              <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Penalty History
+                <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
+                  ({filteredPenalties.length} {filterStatus !== "all" && `${filterStatus} `}penalt{filteredPenalties.length !== 1 ? 'ies' : 'y'})
+                </span>
+              </h3>
+            </div>
             {filteredPenalties.length === 0 ? (
               <div className="py-12 text-center text-gray-500">
                 <AlertCircle className="mx-auto mb-4 h-12 w-12 opacity-50" />
@@ -513,45 +525,46 @@ export default function StaffPenaltyModal({
               filteredPenalties.map((penalty) => (
                 <div
                   key={penalty.id}
-                  className="rounded-lg border p-4 transition-shadow hover:shadow-md"
+                  className="rounded-lg border-2 border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-red-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-red-700"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div className="flex-1">
                       <div className="mb-2 flex items-center gap-2">
-                        <h4 className="font-semibold">{penalty.reason}</h4>
                         {getStatusIcon(penalty.status)}
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">{penalty.reason}</h4>
                       </div>
-                      <div className="mb-2 flex gap-2">
+                      <div className="mb-2 flex items-center gap-2">
                         <Badge
-                          className={getPenaltyTypeColor(penalty.type)}
+                          className={`${getPenaltyTypeColor(penalty.type)} border font-medium`}
                           variant="secondary"
                         >
                           {getPenaltyTypeLabel(penalty.type)}
                         </Badge>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-gray-600 dark:text-gray-400">•</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {getMonthName(penalty.month)} {penalty.year}
                         </span>
                       </div>
                       {penalty.deductedDate && (
                         <p className="mt-1 text-xs text-gray-500">
                           Deducted on:{" "}
-                          {new Date(penalty.deductedDate).toLocaleDateString()}
+                          {new Date(Number(penalty.deductedDate) / 1_000_000).toLocaleDateString()}
                         </p>
                       )}
                       {penalty.waivedDate && (
                         <p className="mt-1 text-xs text-gray-500">
                           Waived on:{" "}
-                          {new Date(penalty.waivedDate).toLocaleDateString()}
+                          {new Date(Number(penalty.waivedDate) / 1_000_000).toLocaleDateString()}
                           {penalty.waivedBy && ` by ${penalty.waivedBy}`}
                         </p>
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-red-700">
-                        {formatCurrency(penalty.amount)}
+                      <p className="mb-2 text-3xl font-bold text-red-600 dark:text-red-400">
+                        ₦{penalty.amount.toLocaleString()}
                       </p>
                       <Badge
-                        className={getStatusColor(penalty.status)}
+                        className={`${getStatusColor(penalty.status)} border-2 px-3 py-1 text-xs font-bold uppercase`}
                         variant="secondary"
                       >
                         {penalty.status}
@@ -594,7 +607,7 @@ export default function StaffPenaltyModal({
                       <span>Issued by: {penalty.issuedBy}</span>
                       <span>
                         Created:{" "}
-                        {new Date(penalty.createdAt).toLocaleDateString()}
+                        {new Date(Number(penalty.createdAt) / 1_000_000).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

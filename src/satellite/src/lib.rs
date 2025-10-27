@@ -10,6 +10,7 @@ use junobuild_satellite::{
 
 // Import modules
 pub mod modules {
+    pub mod banking;
     pub mod expenses;
     pub mod payments;
     pub mod staff;
@@ -18,6 +19,7 @@ pub mod modules {
 }
 
 use modules::{
+    banking::{validate_bank_transaction, validate_transfer, validate_bank_account},
     expenses::{validate_expense_document, validate_expense_category_document},
     payments::validate_payment_document,
     staff::{validate_staff_document, validate_salary_payment_document},
@@ -25,6 +27,9 @@ use modules::{
 };
 
 #[assert_set_doc(collections = [
+    "bank_accounts",
+    "bank_transactions",
+    "inter_account_transfers",
     "expenses", 
     "expense_categories", 
     "budgets", 
@@ -38,16 +43,25 @@ use modules::{
 ])]
 fn assert_set_doc(context: AssertSetDocContext) -> Result<(), String> {
     match context.data.collection.as_str() {
+        // Banking Module
+        "bank_accounts" => validate_bank_account(&context),
+        "bank_transactions" => validate_bank_transaction(&context),
+        "inter_account_transfers" => validate_transfer(&context),
+        // Expenses Module
         "expenses" => validate_expense_document(&context),
         "expense_categories" => validate_expense_category_document(&context),
+        // Students Module
         "students" => validate_student_document(&context),
+        // Payments Module
         "payments" => validate_payment_document(&context),
+        // Staff & Payroll Module
         "staff" => validate_staff_document(&context),
         "salary_payments" => validate_salary_payment_document(&context),
-        "budgets" => Ok(()), // TODO: Implement budget validation
-        "fee_categories" => Ok(()), // TODO: Implement fee category validation
-        "fee_assignments" => Ok(()), // TODO: Implement fee assignment validation
-        "classes" => Ok(()), // TODO: Implement class validation
+        // TODO: Implement remaining validations
+        "budgets" => Ok(()),
+        "fee_categories" => Ok(()),
+        "fee_assignments" => Ok(()),
+        "classes" => Ok(()),
         _ => Ok(()), // Allow unknown collections for now
     }
 }

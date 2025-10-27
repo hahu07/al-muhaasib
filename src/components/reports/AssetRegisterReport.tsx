@@ -4,16 +4,21 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  Building,
+import { 
+  ArrowLeft, 
+  Download, 
+  RefreshCw, 
+  Building, 
+  TrendingUp,
   MapPin,
   Calendar,
   DollarSign,
   TrendingDown,
   Package,
-  Plus,
+  Plus
 } from "lucide-react";
+import { useSchool } from "@/contexts/SchoolContext";
+import { assetService } from "@/services/assetService";
 import { reportsService, type AssetRegister } from "@/services/reportsService";
 import { createSampleAssets, checkAssetData } from "@/utils/sampleAssetData";
 
@@ -29,6 +34,7 @@ const AssetRegisterReport: React.FC<AssetRegisterReportProps> = ({
   filters,
   onBack,
 }) => {
+  const { formatCurrency } = useSchool();
   const [report, setReport] = useState<AssetRegister | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +59,6 @@ const AssetRegisterReport: React.FC<AssetRegisterReportProps> = ({
 
     loadReport();
   }, [filters.asOfDate]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const getConditionBadgeVariant = (condition: string) => {
     switch (condition.toLowerCase()) {

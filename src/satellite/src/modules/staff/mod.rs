@@ -33,7 +33,6 @@ pub struct StaffMemberData {
 pub struct StaffAllowance {
     pub name: String,
     pub amount: f64,
-    pub is_recurring: bool,
 }
 
 #[derive(Deserialize, Serialize)]

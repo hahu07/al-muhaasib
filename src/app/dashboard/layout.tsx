@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchool } from "@/contexts/SchoolContext";
+import { useBankingModule } from "@/hooks/useBankingModule";
 import { RoleSwitcher } from "@/components/dev/RoleSwitcher";
 // import { SetupGuard } from '@/components/SetupGuard';
 import {
@@ -31,6 +33,7 @@ import {
   ArrowLeft,
   Database,
   FileText,
+  Banknote,
 } from "lucide-react";
 
 interface NavItem {
@@ -48,6 +51,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { appUser, hasPermission, signOut, loading } = useAuth();
+  const { config } = useSchool();
+  const { isBankingEnabled } = useBankingModule();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -56,6 +61,7 @@ export default function DashboardLayout({
   const getCurrentSection = () => {
     if (pathname.startsWith("/dashboard/settings")) return "settings";
     if (pathname.startsWith("/dashboard/accounting")) return "accounting";
+    if (pathname.startsWith("/dashboard/banking")) return "banking";
     if (pathname.startsWith("/dashboard/users")) return "users";
     if (pathname.startsWith("/dashboard/students")) return "students";
     if (pathname.startsWith("/dashboard/fees")) return "fees";
@@ -87,6 +93,22 @@ export default function DashboardLayout({
       ];
     }
 
+    // Banking Dashboard
+    if (currentSection === "banking") {
+      return [
+        {
+          title: "← Back to Dashboard",
+          href: "/dashboard",
+          icon: <ArrowLeft className="h-5 w-5" />,
+        },
+        {
+          title: "Overview",
+          href: "/dashboard/banking",
+          icon: <Banknote className="h-5 w-5" />,
+        },
+      ];
+    }
+
     // Accounting Dashboard
     if (currentSection === "accounting") {
       return [
@@ -111,6 +133,12 @@ export default function DashboardLayout({
           href: "/dashboard/accounting/coa",
           icon: <BookOpen className="h-5 w-5" />,
           permission: "accounting.manage_coa",
+        },
+        {
+          title: "Account Mappings",
+          href: "/dashboard/accounting/mappings",
+          icon: <Grid className="h-5 w-5" />,
+          permission: "accounting.view",
         },
         {
           title: "Journal Entries",
@@ -138,8 +166,8 @@ export default function DashboardLayout({
       ];
     }
 
-    // Main Dashboard - show only main 4 sections
-    return [
+    // Main Dashboard - show only main sections
+    const mainNav = [
       {
         title: "Overview",
         href: "/dashboard",
@@ -157,13 +185,26 @@ export default function DashboardLayout({
         icon: <Calculator className="h-5 w-5" />,
         permission: "accounting.view",
       },
-      {
-        title: "Settings",
-        href: "/dashboard/settings",
-        icon: <Settings className="h-5 w-5" />,
-        permission: "settings.view",
-      },
     ];
+
+    // Add banking if enabled
+    if (isBankingEnabled) {
+      mainNav.push({
+        title: "Banking",
+        href: "/dashboard/banking",
+        icon: <Banknote className="h-5 w-5" />,
+        permission: "banking.view",
+      });
+    }
+
+    mainNav.push({
+      title: "Settings",
+      href: "/dashboard/settings",
+      icon: <Settings className="h-5 w-5" />,
+      permission: "settings.view",
+    });
+
+    return mainNav;
   };
 
   const navigation = getNavigationForSection();
@@ -211,9 +252,17 @@ export default function DashboardLayout({
           {/* Logo */}
           <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6 dark:border-gray-700">
             <Link href="/dashboard/dev" className="flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-blue-600" />
+              {config?.branding?.logo ? (
+                <img
+                  src={config.branding.logo}
+                  alt="School Logo"
+                  className="h-8 w-8 object-contain"
+                />
+              ) : (
+                <BookOpen className="h-6 w-6 text-blue-600" />
+              )}
               <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                Al-Muhaasib
+                {config?.schoolName || "Al-Muhaasib"}
               </span>
             </Link>
             <button
@@ -290,9 +339,17 @@ export default function DashboardLayout({
           <Menu className="h-6 w-6" />
         </button>
         <Link href="/dashboard/dev" className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-blue-600" />
+          {config?.branding?.logo ? (
+            <img
+              src={config.branding.logo}
+              alt="School Logo"
+              className="h-6 w-6 object-contain"
+            />
+          ) : (
+            <BookOpen className="h-6 w-6 text-blue-600" />
+          )}
           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            Al-Muhaasib
+            {config?.schoolName || "Al-Muhaasib"}
           </span>
         </Link>
         <div className="w-6" /> {/* Spacer */}

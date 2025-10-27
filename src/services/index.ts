@@ -22,6 +22,8 @@ export * from "./expenseService";
 
 // Staff & payroll
 export * from "./staffService";
+export * from "./statutoryDeductionsCalculator";
+export * from "./payeCalculator";
 
 // Asset & capital expenditure management
 export * from "./assetService";
@@ -29,3 +31,8 @@ export * from "./depreciationPostingService";
 
 // Accounting & double-entry bookkeeping
 export * from "./accountingService";
+export * from "./accountMappingService";
+
+// Banking module (optional, enabled via SchoolConfig)
+export * from "./bankingService";
+export * from "./bankingAutoPostService";

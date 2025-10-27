@@ -27,6 +27,7 @@ import {
   DollarSign,
   Minus,
   Building2,
+  TrendingUp,
 } from "lucide-react";
 import { staffService, salaryPaymentService } from "@/services/staffService";
 import type {
@@ -36,7 +37,7 @@ import type {
   PaymentDeduction,
 } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import PAYECalculator from "@/services/payeCalculator";
+import { PAYECalculator, StatutoryDeductionsCalculator } from "@/services";
 import {
   staffLoanService,
   staffBonusService,
@@ -117,17 +118,8 @@ export default function SalaryPaymentForm({
     }
   }, [formData.staffId]);
 
-  useEffect(() => {
-    // Auto-populate allowances from staff data
-    if (selectedStaff && selectedStaff.allowances && allowances.length === 0) {
-      setAllowances(
-        selectedStaff.allowances.map((a) => ({
-          name: a.name,
-          amount: a.amount,
-        })),
-      );
-    }
-  }, [selectedStaff]);
+  // Note: Allowances are now dynamic (one-time per payment)
+  // They are NOT auto-populated from staff data
 
   useEffect(() => {
     // Reload financial items when month or year changes
@@ -159,19 +151,22 @@ export default function SalaryPaymentForm({
       if (staff) {
         setSelectedStaff(staff);
 
-        // Check if staff has been paid for this month
-        const hasBeenPaid = await salaryPaymentService.hasBeenPaid(
-          formData.staffId,
-          formData.month,
-          formData.year,
-        );
+        // Check if payment already exists for this month/year
+        if (!paymentData) {
+          const existingPayments = await salaryPaymentService.getByStaffId(
+            formData.staffId,
+          );
+          const duplicatePayment = existingPayments.find(
+            (p) => p.month === formData.month && p.year === formData.year,
+          );
 
-        if (hasBeenPaid && !paymentData) {
-          toast({
-            title: "Already Paid",
-            description: `${staff.firstname} ${staff.surname} has already been paid for ${formData.month}/${formData.year}`,
-            variant: "destructive",
-          });
+          if (duplicatePayment) {
+            toast({
+              title: "Payment Already Exists",
+              description: `${staff.firstname} ${staff.surname} already has a salary payment for ${formData.month}/${formData.year} (Status: ${duplicatePayment.status}, Ref: ${duplicatePayment.reference})`,
+              variant: "destructive",
+            });
+          }
         }
 
         // Load financial items (loans, bonuses, penalties)
@@ -443,6 +438,78 @@ export default function SalaryPaymentForm({
     );
   };
 
+  const autoCalculateStatutoryDeductions = () => {
+    if (!selectedStaff) {
+      toast({
+        title: "Error",
+        description: "Please select a staff member first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Calculate gross income (basic salary + allowances)
+    const basicSalary = selectedStaff.basicSalary;
+    const totalAllowances = allowances.reduce(
+      (sum, a) => sum + (a.amount || 0),
+      0,
+    );
+
+    // Calculate all statutory deductions
+    const statutory = StatutoryDeductionsCalculator.calculateAll(
+      basicSalary,
+      totalAllowances,
+    );
+
+    // Remove existing statutory deductions
+    const nonStatutoryDeductions = deductions.filter(
+      (d) =>
+        !d.name.toLowerCase().includes("nhf") &&
+        !d.name.toLowerCase().includes("pension") &&
+        !d.name.toLowerCase().includes("nhis") &&
+        !d.name.toLowerCase().includes("paye") &&
+        !d.name.toLowerCase().includes("tax"),
+    );
+
+    // Add all statutory deductions
+    const newDeductions: DeductionForm[] = [...nonStatutoryDeductions];
+
+    if (statutory.nhf > 0) {
+      newDeductions.push({
+        name: "NHF (National Housing Fund)",
+        amount: statutory.nhf,
+      });
+    }
+
+    if (statutory.pensionEmployee > 0) {
+      newDeductions.push({
+        name: "Pension - Employee (8%)",
+        amount: statutory.pensionEmployee,
+      });
+    }
+
+    if (statutory.nhis > 0) {
+      newDeductions.push({
+        name: "NHIS (National Health Insurance)",
+        amount: statutory.nhis,
+      });
+    }
+
+    if (statutory.paye > 0) {
+      newDeductions.push({
+        name: "PAYE (Pay As You Earn Tax)",
+        amount: statutory.paye,
+      });
+    }
+
+    setDeductions(newDeductions);
+
+    toast({
+      title: "Statutory Deductions Calculated",
+      description: `NHF, Pension, NHIS, and PAYE totaling ${formatCurrency(statutory.totalEmployeeDeductions)} have been added`,
+    });
+  };
+
   const autoCalculatePAYE = () => {
     if (!selectedStaff) {
       toast({
@@ -542,14 +609,25 @@ export default function SalaryPaymentForm({
       onSuccess?.();
     } catch (error) {
       console.error("Error processing salary payment:", error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+        ? error 
+        : "Failed to process salary payment";
+      
       toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to process salary payment",
+        title: "Payment Failed",
+        description: errorMessage,
         variant: "destructive",
+        duration: 6000, // Show for 6 seconds for better visibility
       });
+      
+      // Also set form error for inline display
+      setErrors((prev) => ({
+        ...prev,
+        general: errorMessage,
+      }));
     } finally {
       setLoading(false);
     }
@@ -596,6 +674,16 @@ export default function SalaryPaymentForm({
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>{errors.general}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Instruction when no staff selected */}
+            {!selectedStaff && (
+              <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+                <User className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-900 dark:text-blue-100">
+                  <strong>Getting Started:</strong> Select a staff member below to begin processing their salary payment. The form will automatically load their details, allowances, and any pending bonuses, loans, or penalties.
+                </AlertDescription>
               </Alert>
             )}
 
@@ -716,60 +804,96 @@ export default function SalaryPaymentForm({
               </div>
             </div>
 
-            {/* Financial Items Debug Info */}
+            {/* Financial Items Info */}
             {selectedStaff &&
               (activeLoans.length > 0 ||
                 pendingBonuses.length > 0 ||
                 pendingPenalties.length > 0) && (
-                <Alert>
+                <Alert className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm dark:border-blue-800 dark:from-blue-900/20 dark:to-indigo-900/20">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   <AlertDescription>
-                    <strong>Financial Items Found:</strong>
-                    {activeLoans.length > 0 && (
-                      <span className="ml-2">Loans: {activeLoans.length}</span>
-                    )}
-                    {pendingBonuses.length > 0 && (
-                      <span className="ml-2">
-                        Bonuses: {pendingBonuses.length}
-                      </span>
-                    )}
-                    {pendingPenalties.length > 0 && (
-                      <span className="ml-2">
-                        Penalties: {pendingPenalties.length}
-                      </span>
-                    )}
+                    <div className="flex flex-col gap-2">
+                      <strong className="text-base font-bold text-gray-900 dark:text-gray-100">
+                        Financial Items Found:
+                      </strong>
+                      <div className="flex flex-wrap gap-3">
+                        {activeLoans.length > 0 && (
+                          <div className="flex items-center gap-2 rounded-lg border-2 border-green-200 bg-white px-3 py-2 shadow-sm dark:border-green-800 dark:bg-gray-800">
+                            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              Loans: <span className="text-green-600 dark:text-green-400">{activeLoans.length}</span>
+                            </span>
+                          </div>
+                        )}
+                        {pendingBonuses.length > 0 && (
+                          <div className="flex items-center gap-2 rounded-lg border-2 border-blue-200 bg-white px-3 py-2 shadow-sm dark:border-blue-800 dark:bg-gray-800">
+                            <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              Bonuses: <span className="text-blue-600 dark:text-blue-400">{pendingBonuses.length}</span>
+                            </span>
+                          </div>
+                        )}
+                        {pendingPenalties.length > 0 && (
+                          <div className="flex items-center gap-2 rounded-lg border-2 border-red-200 bg-white px-3 py-2 shadow-sm dark:border-red-800 dark:bg-gray-800">
+                            <Minus className="h-4 w-4 text-red-600 dark:text-red-400" />
+                            <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              Penalties: <span className="text-red-600 dark:text-red-400">{pendingPenalties.length}</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
 
             {/* Staff Information Display */}
             {selectedStaff && (
-              <Card className="border-blue-200 bg-blue-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                      <span className="font-semibold text-blue-600">
+              <Card className="border-2 border-blue-300 bg-gradient-to-r from-blue-50 via-white to-indigo-50 shadow-lg dark:border-blue-700 dark:from-blue-900/30 dark:via-gray-900 dark:to-indigo-900/30">
+                <CardContent className="p-6">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full border-2 border-blue-300 bg-gradient-to-br from-blue-100 to-indigo-100 shadow-md dark:border-blue-700 dark:from-blue-900/50 dark:to-indigo-900/50">
+                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {selectedStaff.firstname.charAt(0)}
                         {selectedStaff.surname.charAt(0)}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="mb-3 text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {selectedStaff.firstname} {selectedStaff.surname}
                       </h3>
-                      <div className="mt-2 grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {selectedStaff.position}
-                          {selectedStaff.department &&
-                            ` • ${selectedStaff.department}`}
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div className="flex items-center gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                          <Building2 className="h-5 w-5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Position</p>
+                            <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                              {selectedStaff.position}
+                            </p>
+                            {selectedStaff.department && (
+                              <p className="truncate text-xs text-gray-600 dark:text-gray-400">
+                                {selectedStaff.department}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          Basic: {formatCurrency(selectedStaff.basicSalary)}
+                        <div className="flex items-center gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                          <DollarSign className="h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Basic Salary</p>
+                            <p className="truncate text-lg font-bold text-green-600 dark:text-green-400">
+                              {formatCurrency(selectedStaff.basicSalary)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Staff No: {selectedStaff.staffNumber}
+                        <div className="flex items-center gap-2 rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                          <User className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Staff Number</p>
+                            <p className="truncate font-mono text-base font-bold text-gray-900 dark:text-gray-100">
+                              {selectedStaff.staffNumber}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -790,16 +914,16 @@ export default function SalaryPaymentForm({
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     {/* Allowances */}
                     <div>
-                      <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-md flex items-center gap-2 font-semibold">
-                          <Plus className="h-4 w-4 text-green-600" />
+                      <div className="mb-4 flex items-center justify-between rounded-t-lg border-b-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-3 dark:border-green-800 dark:from-green-900/20 dark:to-emerald-900/20">
+                        <h4 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+                          <Plus className="h-5 w-5 text-green-600 dark:text-green-400" />
                           Allowances
                         </h4>
                         <Button
                           type="button"
                           onClick={addAllowance}
                           size="sm"
-                          variant="outline"
+                          className="bg-green-600 text-white hover:bg-green-700"
                         >
                           <Plus className="mr-1 h-4 w-4" />
                           Add
@@ -807,15 +931,15 @@ export default function SalaryPaymentForm({
                       </div>
 
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-lg border bg-green-50 p-3">
-                          <span className="font-medium">Basic Salary</span>
-                          <span className="font-semibold text-green-600">
+                        <div className="flex items-center justify-between rounded-lg border-2 border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-800 dark:bg-green-900/20">
+                          <span className="font-bold text-gray-900 dark:text-gray-100">Basic Salary</span>
+                          <span className="text-xl font-bold text-green-600 dark:text-green-400">
                             {formatCurrency(selectedStaff.basicSalary)}
                           </span>
                         </div>
 
                         {allowances.map((allowance, index) => (
-                          <div key={index} className="rounded-lg border p-3">
+                          <div key={index} className="rounded-lg border-2 border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                               <div>
                                 <Label htmlFor={`allowance_${index}_name`}>
@@ -902,37 +1026,51 @@ export default function SalaryPaymentForm({
 
                     {/* Deductions */}
                     <div>
-                      <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-md flex items-center gap-2 font-semibold">
-                          <Minus className="h-4 w-4 text-red-600" />
-                          Deductions
-                        </h4>
-                        <div className="flex gap-2">
+                      <div className="mb-4 rounded-t-lg border-b-2 border-red-200 bg-gradient-to-r from-red-50 to-pink-50 p-3 dark:border-red-800 dark:from-red-900/20 dark:to-pink-900/20">
+                        <div className="mb-3 flex items-center justify-between">
+                          <h4 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+                            <Minus className="h-5 w-5 text-red-600 dark:text-red-400" />
+                            Deductions
+                          </h4>
+                          <Button
+                            type="button"
+                            onClick={addDeduction}
+                            size="sm"
+                            className="bg-red-600 text-white hover:bg-red-700"
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Add
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            onClick={autoCalculateStatutoryDeductions}
+                            size="sm"
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                            disabled={!selectedStaff}
+                            title="Auto-calculate NHF, Pension, NHIS, and PAYE"
+                          >
+                            <Calculator className="mr-1 h-4 w-4" />
+                            Auto Statutory
+                          </Button>
                           <Button
                             type="button"
                             onClick={autoCalculatePAYE}
                             size="sm"
                             className="bg-blue-600 text-white hover:bg-blue-700"
                             disabled={!selectedStaff}
+                            title="Auto-calculate PAYE only"
                           >
                             <Calculator className="mr-1 h-4 w-4" />
-                            Auto PAYE
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={addDeduction}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Add
+                            PAYE Only
                           </Button>
                         </div>
                       </div>
 
                       <div className="space-y-3">
                         {deductions.map((deduction, index) => (
-                          <div key={index} className="rounded-lg border p-3">
+                          <div key={index} className="rounded-lg border-2 border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                               <div>
                                 <Label htmlFor={`deduction_${index}_name`}>
@@ -1020,21 +1158,24 @@ export default function SalaryPaymentForm({
                 </div>
 
                 {/* Payment Summary */}
-                <Card className="border-gray-200 bg-gray-50">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Payment Summary</CardTitle>
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-lg dark:border-blue-800 dark:from-blue-900/20 dark:via-gray-900 dark:to-indigo-900/20">
+                  <CardHeader className="border-b-2 border-blue-200 bg-gradient-to-r from-blue-100 to-indigo-100 dark:border-blue-800 dark:from-blue-900/30 dark:to-indigo-900/30">
+                    <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+                      <Calculator className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      Payment Summary
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span>Basic Salary:</span>
-                        <span className="font-medium">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Basic Salary:</span>
+                        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
                           {formatCurrency(selectedStaff.basicSalary)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Total Allowances:</span>
-                        <span className="font-medium text-green-600">
+                      <div className="flex items-center justify-between rounded-lg bg-green-50 p-3 shadow-sm dark:bg-green-900/20">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Total Allowances:</span>
+                        <span className="text-lg font-bold text-green-600 dark:text-green-400">
                           +
                           {formatCurrency(
                             allowances.reduce(
@@ -1044,23 +1185,27 @@ export default function SalaryPaymentForm({
                           )}
                         </span>
                       </div>
-                      <Separator />
-                      <div className="flex justify-between font-medium">
-                        <span>Gross Pay:</span>
-                        <span>{formatCurrency(totalGross)}</span>
+                      <Separator className="my-4" />
+                      <div className="flex items-center justify-between rounded-lg bg-blue-50 p-4 shadow-sm dark:bg-blue-900/20">
+                        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Gross Pay:</span>
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(totalGross)}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Total Deductions:</span>
-                        <span className="font-medium text-red-600">
+                      <div className="flex items-center justify-between rounded-lg bg-red-50 p-3 shadow-sm dark:bg-red-900/20">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Total Deductions:</span>
+                        <span className="text-lg font-bold text-red-600 dark:text-red-400">
                           -{formatCurrency(totalDeductions)}
                         </span>
                       </div>
-                      <Separator />
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Net Pay:</span>
+                      <Separator className="my-4" />
+                      <div className="flex items-center justify-between rounded-lg border-2 border-green-300 bg-gradient-to-r from-green-100 to-emerald-100 p-5 shadow-md dark:border-green-700 dark:from-green-900/30 dark:to-emerald-900/30">
+                        <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Net Pay:</span>
                         <span
                           className={
-                            netPay < 0 ? "text-red-600" : "text-green-600"
+                            `text-3xl font-bold ${
+                              netPay < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                            }`
                           }
                         >
                           {formatCurrency(netPay)}

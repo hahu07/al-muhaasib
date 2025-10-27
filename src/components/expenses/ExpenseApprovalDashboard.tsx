@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { expenseService } from "@/services";
+import { expenseService, UserService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Expense } from "@/types";
+import type { Expense, AppUser } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import {
@@ -37,6 +37,8 @@ export const ExpenseApprovalDashboard: React.FC<
     "all" | "low" | "medium" | "high"
   >("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [userCache, setUserCache] = useState<Map<string, AppUser>>(new Map());
+  const [userService] = useState(() => new UserService());
 
   // Statistics
   const [stats, setStats] = useState({
@@ -50,8 +52,37 @@ export const ExpenseApprovalDashboard: React.FC<
   useEffect(() => {
     if (appUser?.role === "super_admin" || appUser?.role === "bursar") {
       loadData();
+      loadUsers();
     }
   }, [appUser]);
+
+  const loadUsers = async () => {
+    try {
+      const users = await userService.list();
+      const cache = new Map<string, AppUser>();
+      users.forEach(user => cache.set(user.id, user));
+      setUserCache(cache);
+    } catch (error) {
+      console.error("Error loading users:", error);
+    }
+  };
+
+  const getUserDisplayName = (userId: string | undefined): string => {
+    if (!userId) return 'Unknown';
+    
+    // Remove #dev suffix if present (from development self-approval workaround)
+    const cleanUserId = userId.replace('#dev', '');
+    
+    // Look up user in cache
+    const user = userCache.get(cleanUserId);
+    if (user) {
+      const fullName = [user.firstname, user.surname].filter(Boolean).join(' ').trim();
+      return fullName || user.email || 'User';
+    }
+    
+    // Fallback to truncated ID
+    return `User ${cleanUserId.slice(0, 8)}...`;
+  };
 
   const loadData = async () => {
     try {
@@ -475,7 +506,7 @@ export const ExpenseApprovalDashboard: React.FC<
                     <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>#{expense.reference}</span>
                       <span>Category: {expense.categoryName}</span>
-                      <span>Requested by: {expense.recordedBy}</span>
+                      <span>Requested by: {getUserDisplayName(expense.recordedBy)}</span>
                     </div>
                   </div>
 
@@ -545,7 +576,7 @@ export const ExpenseApprovalDashboard: React.FC<
                       </span>
                       <span>#{expense.reference}</span>
                       <span>Vendor: {expense.vendorName || "N/A"}</span>
-                      <span>Approved by: {expense.approvedBy}</span>
+                      <span>Approved by: {getUserDisplayName(expense.approvedBy)}</span>
                     </div>
                   </div>
 

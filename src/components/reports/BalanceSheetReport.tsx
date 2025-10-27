@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useSchool } from "@/contexts/SchoolContext";
 import { reportsService, type BalanceSheet } from "@/services/reportsService";
 
 interface BalanceSheetReportProps {
@@ -28,6 +29,7 @@ const BalanceSheetReport: React.FC<BalanceSheetReportProps> = ({
   filters,
   onBack,
 }) => {
+  const { formatCurrency } = useSchool();
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +54,6 @@ const BalanceSheetReport: React.FC<BalanceSheetReportProps> = ({
 
   const exportReport = () => {
     console.log("Exporting Balance Sheet...");
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-    }).format(amount);
   };
 
   if (loading) {

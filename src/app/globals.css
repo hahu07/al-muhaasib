@@ -19,6 +19,14 @@ html {
 :root {
   --bg-color: rgb(0 0 0); /* Default dark */
   --text-color: rgb(147 197 253);
+  
+  /* Brand Colors - defaults, overridden by BrandingProvider */
+  --color-brand-primary: #4F46E5;
+  --color-brand-primary-rgb: 79, 70, 229;
+  --color-brand-secondary: #7C3AED;
+  --color-brand-secondary-rgb: 124, 58, 237;
+  --color-brand-accent: #EC4899;
+  --color-brand-accent-rgb: 236, 72, 153;
 }
 
 html.light {
@@ -451,4 +459,251 @@ body.dark .bg-muted {
   --color-accent-foreground: rgb(17 24 39);
   --color-muted: rgb(229 231 235);
   --color-border: rgb(229 231 235);
+}
+
+/* ============================================
+   BRAND COLOR UTILITIES
+   ============================================ */
+
+/* Background colors */
+.bg-brand-primary {
+  background-color: var(--color-brand-primary);
+}
+
+.bg-brand-secondary {
+  background-color: var(--color-brand-secondary);
+}
+
+.bg-brand-accent {
+  background-color: var(--color-brand-accent);
+}
+
+/* Background with opacity */
+.bg-brand-primary\/10 {
+  background-color: rgba(var(--color-brand-primary-rgb), 0.1);
+}
+
+.bg-brand-primary\/20 {
+  background-color: rgba(var(--color-brand-primary-rgb), 0.2);
+}
+
+.bg-brand-secondary\/10 {
+  background-color: rgba(var(--color-brand-secondary-rgb), 0.1);
+}
+
+.bg-brand-accent\/10 {
+  background-color: rgba(var(--color-brand-accent-rgb), 0.1);
+}
+
+/* Text colors */
+.text-brand-primary {
+  color: var(--color-brand-primary);
+}
+
+.text-brand-secondary {
+  color: var(--color-brand-secondary);
+}
+
+.text-brand-accent {
+  color: var(--color-brand-accent);
+}
+
+/* Border colors */
+.border-brand-primary {
+  border-color: var(--color-brand-primary);
+}
+
+.border-brand-secondary {
+  border-color: var(--color-brand-secondary);
+}
+
+.border-brand-accent {
+  border-color: var(--color-brand-accent);
+}
+
+/* Hover states */
+.hover\:bg-brand-primary:hover {
+  background-color: var(--color-brand-primary);
+}
+
+.hover\:text-brand-primary:hover {
+  color: var(--color-brand-primary);
+}
+
+/* Focus states */
+.focus\:ring-brand-primary:focus {
+  --tw-ring-color: var(--color-brand-primary);
+}
+
+.focus\:border-brand-primary:focus {
+  border-color: var(--color-brand-primary);
+}
+
+/* ============================================
+   PRINT STYLESHEETS WITH BRANDING
+   ============================================ */
+
+@media print {
+  /* Reset for print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide non-print elements */
+  .no-print,
+  .print\:hidden,
+  nav,
+  aside,
+  button:not(.print-keep),
+  .theme-toggle {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Typography for print */
+  h1 {
+    font-size: 24pt;
+    font-weight: bold;
+    color: var(--color-brand-primary) !important;
+    -webkit-text-fill-color: var(--color-brand-primary) !important;
+    background: none !important;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 18pt;
+    font-weight: bold;
+    color: var(--color-brand-primary) !important;
+    -webkit-text-fill-color: var(--color-brand-primary) !important;
+    background: none !important;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    color: var(--color-brand-secondary) !important;
+    -webkit-text-fill-color: var(--color-brand-secondary) !important;
+    background: none !important;
+  }
+
+  /* Brand colored borders in print */
+  .border-brand-primary {
+    border-color: var(--color-brand-primary) !important;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+    background-color: rgba(var(--color-brand-primary-rgb), 0.1) !important;
+  }
+
+  th {
+    font-weight: bold;
+    border: 1px solid #ddd;
+    padding: 8pt;
+    text-align: left;
+    color: var(--color-brand-primary) !important;
+  }
+
+  td {
+    border: 1px solid #ddd;
+    padding: 6pt;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Receipts and documents */
+  .print-document {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .print-header {
+    text-align: center;
+    margin-bottom: 20pt;
+    padding-bottom: 10pt;
+    border-bottom: 2pt solid var(--color-brand-primary);
+  }
+
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 9pt;
+    color: #666;
+    border-top: 1pt solid #ddd;
+    padding-top: 10pt;
+  }
+
+  /* Brand logo in print */
+  .print-logo {
+    max-height: 60pt;
+    max-width: 200pt;
+    margin-bottom: 10pt;
+  }
+
+  /* Avoid page breaks */
+  .page-break-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Force page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  /* Links in print */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666;
+  }
+
+  a[href^="#"]:after,
+  a[href^="javascript:"]:after {
+    content: "";
+  }
+
+  /* Print-specific visibility */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Ensure brand colors are preserved */
+  .bg-brand-primary {
+    background-color: var(--color-brand-primary) !important;
+    color: white !important;
+  }
+
+  .text-brand-primary {
+    color: var(--color-brand-primary) !important;
+    -webkit-text-fill-color: var(--color-brand-primary) !important;
+  }
 }

@@ -37,7 +37,6 @@ interface StaffFormProps {
 interface AllowanceForm {
   name: string;
   amount: number;
-  isRecurring: boolean;
 }
 
 export default function StaffForm({
@@ -75,17 +74,26 @@ export default function StaffForm({
 
   // Generate staff number if creating new staff
   useEffect(() => {
-    if (!staff && !formData.staffNumber) {
-      const generateStaffNumber = () => {
-        const year = new Date().getFullYear();
-        const random = Math.floor(Math.random() * 9999)
-          .toString()
-          .padStart(4, "0");
-        return `STF-${year}-${random}`;
-      };
-      setFormData((prev) => ({ ...prev, staffNumber: generateStaffNumber() }));
+    const loadStaffNumber = async () => {
+      if (!staff) {
+        try {
+          const staffNumber = await staffService.generateStaffNumber();
+          setFormData((prev) => ({ ...prev, staffNumber }));
+        } catch (error) {
+          console.error('Failed to generate staff number:', error);
+          toast({
+            title: "Warning",
+            description: "Could not auto-generate staff number. Please enter manually.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    if (!staff) {
+      loadStaffNumber();
     }
-  }, [staff, formData.staffNumber]);
+  }, [staff, toast]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -232,7 +240,7 @@ export default function StaffForm({
     }
     setAllowances((prev) => [
       ...prev,
-      { name: "", amount: 0, isRecurring: true },
+      { name: "", amount: 0 },
     ]);
   };
 
@@ -647,22 +655,7 @@ export default function StaffForm({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id={`allowance_${index}_recurring`}
-                        checked={allowance.isRecurring}
-                        onCheckedChange={(checked) =>
-                          updateAllowance(index, "isRecurring", checked)
-                        }
-                      />
-                      <Label
-                        htmlFor={`allowance_${index}_recurring`}
-                        className="text-sm"
-                      >
-                        Recurring
-                      </Label>
-                    </div>
+                  <div className="flex items-end justify-end">
                     <Button
                       type="button"
                       variant="outline"

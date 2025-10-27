@@ -588,7 +588,7 @@ export default function AssetList({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
-                          className="border border-gray-300 bg-white shadow-lg"
+                          className="border border-gray-300 shadow-lg dark:border-gray-600 dark:bg-gray-800"
                         >
                           <DropdownMenuItem onClick={() => onViewAsset(asset)}>
                             <Eye className="mr-2 h-4 w-4" />

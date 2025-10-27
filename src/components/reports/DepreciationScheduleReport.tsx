@@ -4,14 +4,20 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
+import { 
+  ArrowLeft, 
+  Download, 
+  RefreshCw, 
+  Building, 
+  Clock,
   Calendar,
   DollarSign,
   TrendingDown,
   Calculator,
-  Package,
+  Package
 } from "lucide-react";
+import { useSchool } from "@/contexts/SchoolContext";
+import { assetService } from "@/services/assetService";
 import {
   reportsService,
   type DepreciationSchedule,
@@ -30,6 +36,7 @@ const DepreciationScheduleReport: React.FC<DepreciationScheduleReportProps> = ({
   filters,
   onBack,
 }) => {
+  const { formatCurrency } = useSchool();
   const [report, setReport] = useState<DepreciationSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +62,6 @@ const DepreciationScheduleReport: React.FC<DepreciationScheduleReportProps> = ({
 
     loadReport();
   }, [filters.startDate, filters.endDate]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const getDepreciationMethodBadge = (method: string) => {
     switch (method.toLowerCase()) {

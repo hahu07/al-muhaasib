@@ -1,9 +1,12 @@
 import { BaseDataService, COLLECTIONS } from "./dataService";
 import type { ExpenseCategoryDef, Expense, Budget, BudgetItem } from "@/types";
 import { nanoid, customAlphabet } from "nanoid";
+import { setDoc, getDoc } from "@junobuild/core";
 import { autoPostingService } from "./autoPostingService";
 import { pendingExpenseStore } from "./pendingExpenseStore";
 import { expenseFormSchema } from "@/validation";
+import { bankTransactionService } from "./bankingService";
+import { schoolConfigService } from "./schoolConfigService";
 
 // Alphanumeric (A-Z, 0-9) generator for 8-char suffixes
 const nanoidAlphaNum = customAlphabet(
@@ -318,14 +321,31 @@ export class ExpenseService extends BaseDataService<Expense> {
       ? pendingExpense.reference
       : generateExpenseReference();
 
-    // Create in Juno with approved status
-    const approvedExpense = await this.create({
+    // When creating in Juno, use current time as createdAt (this is when it's persisted)
+    // approvedAt must be after createdAt per satellite validation
+    const createdAtNanos = nowNanos;
+    const approvedAtNanos = createdAtNanos + BigInt(1_000_000); // Add 1ms to ensure difference
+
+    console.log('Timestamp validation:', {
+      createdAt: createdAtNanos.toString(),
+      approvedAt: approvedAtNanos.toString(),
+      difference: (approvedAtNanos - createdAtNanos).toString(),
+      isValid: approvedAtNanos > createdAtNanos
+    });
+
+    // Create in Juno with approved status (preserving the original ID)
+    const expenseData = {
       ...pendingExpense,
       reference: ensuredReference,
       status: "approved",
       approvedBy: effectiveApprovedBy,
-      approvedAt: nowNanos,
-    });
+      createdAt: createdAtNanos,
+      approvedAt: approvedAtNanos,
+      updatedAt: createdAtNanos,
+    };
+    
+    // Use the original pending expense ID to maintain consistency
+    const approvedExpense = await this.createWithId(expenseId, expenseData);
 
     // Auto-post journal entry for the approved expense
     try {
@@ -345,6 +365,49 @@ export class ExpenseService extends BaseDataService<Expense> {
     } catch (error) {
       console.error("Failed to auto-post expense journal entry:", error);
       // Don't fail the approval if journal entry fails
+    }
+
+    // Create bank transaction if expense is via bank (non-cash)
+    if (
+      pendingExpense.paymentMethod !== "cash" &&
+      pendingExpense.paymentMethod !== "cheque"
+    ) {
+      try {
+        const bankAccountId = await schoolConfigService.getDefaultBankAccount("expenses");
+        if (bankAccountId) {
+          await bankTransactionService.recordTransaction({
+            bankAccountId,
+            transactionDate: pendingExpense.paymentDate,
+            valueDate: pendingExpense.paymentDate,
+            description: `${pendingExpense.categoryName}: ${pendingExpense.description}`,
+            debitAmount: pendingExpense.amount,
+            creditAmount: 0,
+            balance: 0, // Will be updated by the service
+            transactionType: "withdrawal",
+            reference: pendingExpense.reference,
+            category: pendingExpense.categoryName,
+            notes: `Vendor: ${pendingExpense.vendorName || "N/A"}, Payment method: ${pendingExpense.paymentMethod}`,
+            createdBy: approvedBy,
+          });
+
+          // Link the bank transaction to the expense
+          const bankTransactions = await bankTransactionService.list();
+          const latestTransaction = bankTransactions
+            .filter(t => t.reference === pendingExpense.reference)
+            .sort((a, b) => Number(b.createdAt - a.createdAt))[0];
+          
+          if (latestTransaction) {
+            await bankTransactionService.matchTransaction(
+              latestTransaction.id,
+              "expense",
+              approvedExpense.id
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Failed to create bank transaction for expense:", error);
+        // Don't fail the approval if bank transaction fails
+      }
     }
 
     // Remove from local storage after successful save
@@ -437,9 +500,63 @@ export class ExpenseService extends BaseDataService<Expense> {
    * Mark expense as paid (for already-approved expenses in Juno)
    */
   async markAsPaid(expenseId: string): Promise<Expense> {
-    return this.update(expenseId, {
-      status: "paid",
+    // Clear cache first to ensure we get latest data
+    this.cache.clear();
+    
+    // Retry getDoc with delays (recently approved expenses may need time to sync)
+    let doc: Awaited<ReturnType<typeof getDoc>> | null = null;
+    let retries = 0;
+    const maxRetries = 5;
+    
+    while (!doc && retries < maxRetries) {
+      doc = await getDoc({
+        collection: this.collection,
+        key: expenseId,
+      });
+      
+      if (!doc && retries < maxRetries - 1) {
+        retries++;
+        console.log(`Document not found, waiting and retrying (${retries}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      } else if (!doc) {
+        break;
+      }
+    }
+    
+    if (!doc) {
+      throw new Error(`Expense ${expenseId} not found. It may not have been approved yet, or needs more time to sync.`);
+    }
+    
+    const expense = this.deserializeBigInts(doc.data) as Expense;
+    
+    // Verify expense is approved
+    if (expense.status !== "approved") {
+      throw new Error(`Only approved expenses can be marked as paid. Current status: ${expense.status}`);
+    }
+    
+    // Update the expense
+    const nowNanos = BigInt(Date.now()) * BigInt(1_000_000);
+    const updatedExpense = {
+      ...expense,
+      status: "paid" as const,
+      updatedAt: nowNanos,
+    };
+    
+    // Serialize and save with version (tells satellite this is an update, not new doc)
+    const serializedDoc = this.serializeBigInts(updatedExpense);
+    await setDoc({
+      collection: this.collection,
+      doc: {
+        key: expenseId,
+        data: serializedDoc as Record<string, unknown>,
+        version: doc.version, // Include version for update
+      },
     });
+    
+    // Clear cache
+    this.cache.clear();
+    
+    return updatedExpense;
   }
 
   /**

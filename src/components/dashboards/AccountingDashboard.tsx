@@ -16,8 +16,6 @@ import {
   UserCheckIcon,
   PackageIcon,
   FileBarChartIcon,
-  Settings,
-  Database,
 } from "lucide-react";
 import {
   useFinancialDashboard,
@@ -675,7 +673,7 @@ function TransactionsTab({
           title="Total Collected"
           value={`₦${data.revenue.totalCollected.toLocaleString()}`}
           icon={<DollarSignIcon className="h-6 w-6 text-green-600" />}
-          trend="+8.2%"
+          trend="Collected"
           trendColor="text-green-600"
         />
         <StatCard

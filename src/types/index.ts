@@ -22,12 +22,14 @@ export type ModuleName =
   | "staff"
   | "assets"
   | "reports"
-  | "accounting";
+  | "accounting"
+  | "banking"; // Bank transaction tracking, reconciliation, and cash flow
 
 export type AcademicTerm = "first" | "second" | "third";
 
 export interface SchoolBranding {
-  logo?: string;
+  logo?: string; // URL or data URL for uploaded logo
+  logoStorageKey?: string; // Juno storage key for uploaded file
   favicon?: string;
   primaryColor: string;
   secondaryColor: string;
@@ -99,6 +101,10 @@ export interface SchoolConfig {
     | "online"
     | "cheque"
   )[];
+
+  // Default Bank Accounts (for automatic bank transaction creation)
+  // Flexible: can add any custom transaction type (e.g., contributions, donations, petty_cash)
+  defaultBankAccounts?: Record<string, string>; // { transactionType: bankAccountId }
 
   // Reporting Settings
   reportHeader?: string;
@@ -206,6 +212,14 @@ export const PERMISSIONS = {
   ACCOUNTING_POST_ENTRIES: "accounting.post_entries",
   ACCOUNTING_REVERSE_ENTRIES: "accounting.reverse_entries",
   ACCOUNTING_MANAGE_COA: "accounting.manage_coa",
+
+  // Banking Module
+  BANKING_VIEW: "banking.view",
+  BANKING_CREATE_TRANSACTIONS: "banking.create_transactions",
+  BANKING_RECONCILE: "banking.reconcile",
+  BANKING_TRANSFER: "banking.transfer",
+  BANKING_APPROVE_TRANSFER: "banking.approve_transfer",
+  BANKING_IMPORT_STATEMENTS: "banking.import_statements",
 
   // Reports
   REPORTS_VIEW: "reports.view",
@@ -552,7 +566,6 @@ export interface StaffMember {
 export interface StaffAllowance {
   name: string;
   amount: number;
-  isRecurring: boolean;
 }
 
 export interface SalaryPayment {
@@ -562,18 +575,25 @@ export interface SalaryPayment {
   staffNumber: string;
   month: string;
   year: string;
+  paymentPeriodStart: string; // ISO date string (YYYY-MM-DD)
+  paymentPeriodEnd: string; // ISO date string (YYYY-MM-DD)
   basicSalary: number;
   allowances: PaymentAllowance[];
   totalGross: number;
   deductions: PaymentDeduction[];
+  statutoryDeductions?: StatutoryDeductions;
   totalDeductions: number;
   netPay: number;
+  netSalary?: number; // Alias for backend compatibility
   paymentMethod: "bank_transfer" | "cash" | "cheque";
   paymentDate: string;
   reference: string;
   status: "pending" | "approved" | "paid";
   recordedBy: string;
+  processedBy?: string; // Alias for backend compatibility
+  processedAt?: bigint; // Backend requirement
   approvedBy?: string;
+  notes?: string; // Backend optional field
   createdAt: bigint;
   updatedAt: bigint;
   [key: string]: unknown;
@@ -582,11 +602,24 @@ export interface SalaryPayment {
 export interface PaymentAllowance {
   name: string;
   amount: number;
+  isTaxable?: boolean;
 }
 
 export interface PaymentDeduction {
   name: string;
   amount: number;
+  type?: "tax" | "statutory" | "loan" | "other";
+  isStatutory?: boolean;
+}
+
+export interface StatutoryDeductions {
+  nhf: number;
+  pensionEmployee: number;
+  pensionEmployer: number;
+  nhis: number;
+  paye: number;
+  totalEmployeeDeductions: number;
+  totalEmployerContributions: number;
 }
 
 // ============================================
@@ -853,6 +886,25 @@ export interface AssetValuation {
 // ACCOUNTING & DOUBLE-ENTRY
 // ============================================
 
+/**
+ * Account Mapping - Maps transaction types to GL accounts
+ * Allows dynamic configuration of which accounts are used for different transaction types
+ */
+export interface AccountMapping {
+  id: string;
+  mappingType: "revenue" | "expense" | "asset" | "liability";
+  sourceType: string; // e.g., "tuition", "uniform", "salaries", "utilities"
+  sourceName: string; // Human-readable name
+  accountId: string; // GL account ID
+  accountCode: string; // GL account code (e.g., "4100")
+  accountName: string; // GL account name
+  isDefault: boolean; // Whether this is a system default or user-created
+  isActive: boolean;
+  createdAt: bigint;
+  updatedAt: bigint;
+  [key: string]: unknown;
+}
+
 export interface ChartOfAccounts {
   id: string;
   accountCode: string;
@@ -909,6 +961,12 @@ export interface BankAccount {
   accountNumber: string;
   accountType: "current" | "savings";
   balance: number;
+  
+  // Link to Chart of Accounts (General Ledger)
+  glAccountId?: string; // Maps to ChartOfAccounts.id (e.g., "1110 - Cash in Bank - GTBank")
+  glAccountCode?: string; // GL account code for reference (e.g., "1110")
+  glAccountName?: string; // GL account name for reference
+  
   isActive: boolean;
   createdAt: bigint;
   updatedAt: bigint;
@@ -935,5 +993,238 @@ export interface FinancialReport {
   generatedBy: string;
   generatedAt: bigint;
   reportData: unknown; // Flexible structure for different report types
+  [key: string]: unknown;
+}
+
+// ============================================
+// BANKING MODULE TYPES
+// ============================================
+
+export interface BankTransaction {
+  id: string;
+  bankAccountId: string;
+  transactionDate: string; // ISO date
+  valueDate: string; // ISO date (when funds are available)
+  description: string;
+  debitAmount: number; // Money out
+  creditAmount: number; // Money in
+  balance: number; // Running balance after transaction
+  reference?: string; // Bank reference number
+  transactionType: "deposit" | "withdrawal" | "transfer" | "fee" | "interest" | "charge";
+
+  // Reconciliation fields
+  status: "pending" | "cleared" | "reconciled";
+  matchedPaymentId?: string; // Link to Payment entity
+  matchedExpenseId?: string; // Link to Expense entity
+  matchedTransferId?: string; // Link to InterAccountTransfer
+  statementId?: string; // Link to BankStatement
+  isReconciled: boolean;
+  reconciledBy?: string;
+  reconciledAt?: bigint;
+
+  // Additional info
+  category?: string; // Optional categorization
+  notes?: string;
+  importedFrom?: string; // Source of import (manual/csv/api)
+
+  // Metadata
+  createdAt: bigint;
+  updatedAt: bigint;
+  createdBy: string;
+  [key: string]: unknown;
+}
+
+export interface BankStatement {
+  id: string;
+  bankAccountId: string;
+  bankAccountName: string;
+  accountNumber: string;
+
+  // Statement period
+  statementDate: string; // End date of statement
+  periodStart: string;
+  periodEnd: string;
+
+  // Balances
+  openingBalance: number;
+  closingBalance: number;
+  totalDebits: number; // Total money out
+  totalCredits: number; // Total money in
+
+  // Transactions
+  transactionIds: string[]; // References to BankTransaction entities
+  transactionCount: number;
+
+  // Reconciliation status
+  isReconciled: boolean;
+  reconciliationId?: string;
+  reconciledBy?: string;
+  reconciledAt?: bigint;
+
+  // Import info
+  importedFrom?: string; // csv/excel/api
+  importedAt?: bigint;
+
+  // Metadata
+  notes?: string;
+  createdAt: bigint;
+  updatedAt: bigint;
+  createdBy: string;
+  [key: string]: unknown;
+}
+
+export interface ReconciliationAdjustment {
+  type: "bank_charge" | "interest_earned" | "error_correction" | "nsf_check" | "other";
+  description: string;
+  amount: number; // Positive for additions, negative for deductions
+  transactionId?: string; // If adjustment creates a transaction
+}
+
+export interface UnmatchedItem {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: "debit" | "credit";
+  reference?: string;
+  source: "bank" | "book"; // Where this item came from
+}
+
+export interface BankReconciliation {
+  id: string;
+  bankAccountId: string;
+  bankAccountName: string;
+
+  // Reconciliation period
+  reconciliationDate: string;
+  periodStart: string;
+  periodEnd: string;
+
+  // Balances
+  statementBalance: number; // From bank statement
+  bookBalance: number; // From our records
+  difference: number; // statementBalance - bookBalance
+
+  // Reconciliation items
+  unreconciledDeposits: number; // Deposits in our books, not in statement
+  unreconciledWithdrawals: number; // Withdrawals in our books, not in statement
+  bankCharges: number; // Bank charges not yet recorded
+  outstandingChecks: number; // Checks issued but not cleared
+  depositsInTransit: number; // Deposits made but not yet cleared
+
+  // Adjustments
+  adjustments: ReconciliationAdjustment[];
+  totalAdjustments: number;
+
+  // Status
+  status: "in-progress" | "completed" | "approved";
+
+  // Items
+  matchedItemIds: string[]; // Transaction IDs that were matched
+  unmatchedBankItems: UnmatchedItem[]; // Bank transactions without matches
+  unmatchedBookItems: UnmatchedItem[]; // Our transactions without matches
+
+  // Metadata
+  notes?: string;
+  reconciledBy: string;
+  approvedBy?: string;
+  approvedAt?: bigint;
+  createdAt: bigint;
+  updatedAt: bigint;
+  [key: string]: unknown;
+}
+
+export interface InterAccountTransfer {
+  id: string;
+
+  // Transfer details
+  fromAccountId: string;
+  fromAccountName: string;
+  fromAccountNumber: string;
+  toAccountId: string;
+  toAccountName: string;
+  toAccountNumber: string;
+
+  amount: number;
+  transferDate: string;
+  valueDate?: string; // When funds become available
+
+  // References
+  reference: string; // Transfer reference number (e.g., TRF-2025-XXXXXXXX)
+  externalReference?: string; // Bank reference if applicable
+
+  // Details
+  description: string;
+  purpose?: string;
+
+  // Status tracking
+  status: "pending" | "completed" | "cancelled" | "failed";
+
+  // Approval workflow
+  requiresApproval: boolean;
+  approvedBy?: string;
+  approvedAt?: bigint;
+
+  // Accounting integration
+  journalEntryId?: string; // Link to journal entry
+  fromTransactionId?: string; // Link to debit transaction
+  toTransactionId?: string; // Link to credit transaction
+
+  // Scheduling (for future enhancement)
+  isRecurring?: boolean;
+  recurringSchedule?: {
+    frequency: "daily" | "weekly" | "monthly" | "quarterly";
+    nextTransferDate: string;
+    endDate?: string;
+  };
+
+  // Metadata
+  notes?: string;
+  createdBy: string;
+  createdAt: bigint;
+  updatedAt: bigint;
+  [key: string]: unknown;
+}
+
+export interface CashFlowProjection {
+  id: string;
+
+  // Projection period
+  projectionDate: string;
+  periodStart: string;
+  periodEnd: string;
+
+  // Opening position
+  openingBalance: number;
+
+  // Projected inflows
+  projectedRevenue: number;
+  projectedFeeCollection: number;
+  projectedOtherIncome: number;
+  totalProjectedInflows: number;
+
+  // Projected outflows
+  projectedSalaries: number;
+  projectedOperationalExpenses: number;
+  projectedCapitalExpenditure: number;
+  projectedLoanPayments: number;
+  totalProjectedOutflows: number;
+
+  // Net position
+  projectedNetCashFlow: number;
+  projectedClosingBalance: number;
+
+  // Liquidity indicators
+  liquidityStatus: "healthy" | "adequate" | "tight" | "critical";
+  daysOfCashOnHand: number; // Number of days operations can be sustained
+
+  // Assumptions
+  assumptions: string[];
+
+  // Metadata
+  notes?: string;
+  createdBy: string;
+  createdAt: bigint;
+  updatedAt: bigint;
   [key: string]: unknown;
 }

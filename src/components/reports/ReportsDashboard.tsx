@@ -316,7 +316,11 @@ const ReportsDashboard: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-600">Total Revenue</p>
                   <p className="text-2xl font-bold text-green-600">
-                    ₦2,450,000
+                    {loading.incomeStatement ? (
+                      <span className="text-gray-400">Loading...</span>
+                    ) : (
+                      formatCurrency(summary.totalRevenue)
+                    )}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-600" />
@@ -328,7 +332,13 @@ const ReportsDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Expenses</p>
-                  <p className="text-2xl font-bold text-red-600">₦1,800,000</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {loading.incomeStatement ? (
+                      <span className="text-gray-400">Loading...</span>
+                    ) : (
+                      formatCurrency(summary.totalExpenses)
+                    )}
+                  </p>
                 </div>
                 <TrendingUp className="h-8 w-8 rotate-180 text-red-600" />
               </div>
@@ -339,7 +349,13 @@ const ReportsDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Net Income</p>
-                  <p className="text-2xl font-bold text-blue-600">₦650,000</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {loading.incomeStatement ? (
+                      <span className="text-gray-400">Loading...</span>
+                    ) : (
+                      formatCurrency(summary.netIncome)
+                    )}
+                  </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-blue-600" />
               </div>
@@ -351,7 +367,11 @@ const ReportsDashboard: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-600">Total Assets</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    ₦8,500,000
+                    {loading.balanceSheet ? (
+                      <span className="text-gray-400">Loading...</span>
+                    ) : (
+                      formatCurrency(summary.totalAssets)
+                    )}
                   </p>
                 </div>
                 <Building className="h-8 w-8 text-purple-600" />

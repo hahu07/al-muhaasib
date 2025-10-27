@@ -3,6 +3,8 @@ import type { Payment, PaymentAllocation } from "@/types";
 import { customAlphabet } from "nanoid";
 import { autoPostingService } from "./autoPostingService";
 import { z } from "zod";
+import { bankTransactionService } from "./bankingService";
+import { schoolConfigService } from "./schoolConfigService";
 
 // Create alphanumeric nanoid generator for references (backend validation requires alphanumeric only)
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8);
@@ -87,7 +89,7 @@ export class EnhancedPaymentService extends BaseDataService<Payment> {
       status: "confirmed",
     });
 
-    // Auto-post journal entry for the payment
+    // Auto-post journal entry for the payment (reduces Accounts Receivable)
     try {
       await autoPostingService.postStudentPayment(
         data.amount,
@@ -106,6 +108,50 @@ export class EnhancedPaymentService extends BaseDataService<Payment> {
       console.error("Failed to auto-post payment journal entry:", error);
       // Don't fail the payment if journal entry fails
       // The entry can be created manually later
+    }
+
+    // Create bank transaction if payment is via bank (non-cash)
+    if (
+      data.paymentMethod !== "cash" &&
+      data.paymentMethod !== "cheque"
+    ) {
+      try {
+        const bankAccountId = await schoolConfigService.getDefaultBankAccount("feePayments");
+        if (bankAccountId) {
+          await bankTransactionService.recordTransaction({
+            bankAccountId,
+            transactionDate: data.paymentDate,
+            valueDate: data.paymentDate,
+            description: `Fee payment: ${data.studentName} - ${data.className}`,
+            debitAmount: 0,
+            creditAmount: data.amount,
+            balance: 0, // Will be updated by the service
+            transactionType: "deposit",
+            reference: reference,
+            category: "Fee Payment",
+            notes: `Payment method: ${data.paymentMethod}`,
+            createdBy: data.recordedBy,
+          });
+
+          // Link the bank transaction to the payment
+          // Store the payment ID in the bank transaction for reconciliation
+          const bankTransactions = await bankTransactionService.list();
+          const latestTransaction = bankTransactions
+            .filter(t => t.reference === reference)
+            .sort((a, b) => Number(b.createdAt - a.createdAt))[0];
+          
+          if (latestTransaction) {
+            await bankTransactionService.matchTransaction(
+              latestTransaction.id,
+              "payment",
+              payment.id
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Failed to create bank transaction for payment:", error);
+        // Don't fail the payment if bank transaction fails
+      }
     }
 
     return payment;
@@ -157,6 +203,7 @@ export class EnhancedPaymentService extends BaseDataService<Payment> {
       notes: `Cancelled: ${reason}`,
     });
   }
+
 
   /**
    * Get payment analytics for a period
@@ -252,10 +299,34 @@ export class EnhancedPaymentService extends BaseDataService<Payment> {
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-6); // Last 6 months
 
+    // Calculate totalPending and totalOverdue from fee assignments
+    const { studentFeeAssignmentService } = await import("./feeService");
+    const assignments = await studentFeeAssignmentService.list();
+    
+    const totalAssigned = assignments.reduce((sum: number, a) => sum + a.totalAmount, 0);
+    const totalPending = totalAssigned - totalCollected;
+    
+    // Calculate overdue: assignments with dueDate in the past and unpaid balance
+    const now = new Date().toISOString();
+    const totalOverdue = assignments
+      .filter((a) => a.dueDate && a.dueDate < now && a.status !== "paid")
+      .reduce((sum: number, a) => {
+        const paidAmount = confirmed
+          .filter((p) => p.studentId === a.studentId)
+          .reduce((paidSum: number, p) => {
+            const allocatedToAssignment = p.feeAllocations
+              .filter((fa) => a.feeItems.some(fi => fi.categoryName === fa.feeType))
+              .reduce((allocSum: number, fa) => allocSum + fa.amount, 0);
+            return paidSum + allocatedToAssignment;
+          }, 0);
+        const outstanding = a.totalAmount - paidAmount;
+        return sum + Math.max(0, outstanding);
+      }, 0);
+
     return {
       totalCollected,
-      totalPending: 0, // Will be calculated from fee assignments
-      totalOverdue: 0, // Will be calculated from fee assignments
+      totalPending,
+      totalOverdue,
       monthlyTrend,
     };
   }

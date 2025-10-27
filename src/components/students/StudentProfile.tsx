@@ -26,6 +26,7 @@ import {
   paymentService,
   studentFeeAssignmentService,
 } from "@/services";
+import { useSchool } from "@/contexts/SchoolContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,6 +49,7 @@ export default function StudentProfile({
   studentData,
 }: StudentProfileProps) {
   const router = useRouter();
+  const { formatCurrency } = useSchool();
   const [student, setStudent] = useState<StudentProfileType | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [feeAssignments, setFeeAssignments] = useState<StudentFeeAssignment[]>(
@@ -252,14 +254,6 @@ export default function StudentProfile({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-NG", {

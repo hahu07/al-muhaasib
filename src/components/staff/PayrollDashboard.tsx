@@ -253,53 +253,32 @@ export default function PayrollDashboard() {
         return str;
       };
 
-      // Build CSV content with proper structure
+      // Build clean tabular CSV content
       const csvLines: string[] = [];
 
-      // Header section
-      csvLines.push("SALARY PAYMENTS REPORT");
-      csvLines.push(`Period: ${monthName} ${selectedYear}`);
-      csvLines.push(`Generated: ${exportDate}`);
-      csvLines.push(`Total Records: ${filteredPayments.length}`);
+      // Title row with report header merged across columns
+      csvLines.push(`"SALARY PAYMENTS REPORT - ${monthName} ${selectedYear}"`);
+      csvLines.push(`"Generated: ${exportDate} | Records: ${filteredPayments.length} | Pending: ${pendingCount} | Approved: ${approvedCount} | Paid: ${paidCount}"`);
       csvLines.push(""); // Empty line
 
-      // Summary section
-      csvLines.push("PAYMENT SUMMARY");
-      csvLines.push(`Total Basic Salary,${formatCurrency(totalBasicSalary)}`);
-      csvLines.push(`Total Gross Pay,${formatCurrency(totalGrossAmount)}`);
-      csvLines.push(
-        `Total Deductions,${formatCurrency(totalDeductionsAmount)}`,
-      );
-      csvLines.push(`Total Net Pay,${formatCurrency(totalNetPayAmount)}`);
-      csvLines.push(""); // Empty line
-
-      // Status breakdown
-      csvLines.push("STATUS BREAKDOWN");
-      csvLines.push(`Pending,${pendingCount}`);
-      csvLines.push(`Approved,${approvedCount}`);
-      csvLines.push(`Paid,${paidCount}`);
-      csvLines.push(""); // Empty line
-      csvLines.push(""); // Empty line
-
-      // Data table headers
+      // Data table headers with proper alignment
       const headers = [
-        "No.",
+        "No",
         "Staff Name",
         "Staff Number",
-        "Position",
         "Reference",
-        "Basic Salary (₦)",
-        "Allowances (₦)",
-        "Total Gross (₦)",
-        "Deductions (₦)",
-        "Net Pay (₦)",
-        "Payment Method",
-        "Payment Date",
+        "Basic Salary",
+        "Allowances",
+        "Gross Pay",
+        "Deductions",
+        "Net Pay",
+        "Method",
+        "Date",
         "Status",
       ];
       csvLines.push(headers.join(","));
 
-      // Data rows
+      // Data rows with proper number formatting (no currency symbols for spreadsheet compatibility)
       filteredPayments.forEach((payment, index) => {
         const allowancesTotal =
           payment.allowances?.reduce((sum, a) => sum + a.amount, 0) || 0;
@@ -308,13 +287,12 @@ export default function PayrollDashboard() {
           (index + 1).toString(),
           escapeCSV(payment.staffName),
           escapeCSV(payment.staffNumber),
-          "", // Position - we don't have this in payment data
           escapeCSV(payment.reference),
-          payment.basicSalary.toLocaleString("en-NG"),
-          allowancesTotal.toLocaleString("en-NG"),
-          payment.totalGross.toLocaleString("en-NG"),
-          payment.totalDeductions.toLocaleString("en-NG"),
-          payment.netPay.toLocaleString("en-NG"),
+          payment.basicSalary.toFixed(2),
+          allowancesTotal.toFixed(2),
+          payment.totalGross.toFixed(2),
+          payment.totalDeductions.toFixed(2),
+          payment.netPay.toFixed(2),
           escapeCSV(payment.paymentMethod.replace("_", " ").toUpperCase()),
           new Date(payment.paymentDate).toLocaleDateString("en-GB"),
           escapeCSV(payment.status.toUpperCase()),
@@ -322,30 +300,38 @@ export default function PayrollDashboard() {
         csvLines.push(row.join(","));
       });
 
-      // Footer totals
+      // Footer totals row
       csvLines.push(""); // Empty line
       csvLines.push(
         [
           "",
           "",
           "",
-          "",
           "TOTALS",
-          totalBasicSalary.toLocaleString("en-NG"),
+          totalBasicSalary.toFixed(2),
           "",
-          totalGrossAmount.toLocaleString("en-NG"),
-          totalDeductionsAmount.toLocaleString("en-NG"),
-          totalNetPayAmount.toLocaleString("en-NG"),
+          totalGrossAmount.toFixed(2),
+          totalDeductionsAmount.toFixed(2),
+          totalNetPayAmount.toFixed(2),
           "",
           "",
           "",
         ].join(","),
       );
 
+      // Summary section at bottom
+      csvLines.push(""); // Empty line
+      csvLines.push("Summary,Amount");
+      csvLines.push(`Total Basic Salary,${totalBasicSalary.toFixed(2)}`);
+      csvLines.push(`Total Allowances,${(totalGrossAmount - totalBasicSalary).toFixed(2)}`);
+      csvLines.push(`Total Gross Pay,${totalGrossAmount.toFixed(2)}`);
+      csvLines.push(`Total Deductions,${totalDeductionsAmount.toFixed(2)}`);
+      csvLines.push(`Total Net Pay,${totalNetPayAmount.toFixed(2)}`);
+
       // Create CSV content
       const csvContent = csvLines.join("\n");
 
-      // Add BOM for proper Excel UTF-8 encoding
+      // Add BOM for proper Excel/Calc UTF-8 encoding
       const BOM = "\uFEFF";
       const blob = new Blob([BOM + csvContent], {
         type: "text/csv;charset=utf-8;",
@@ -1196,7 +1182,7 @@ export default function PayrollDashboard() {
 
       {/* Salary Payment Form Dialog */}
       <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {selectedPayment
@@ -1204,12 +1190,14 @@ export default function PayrollDashboard() {
                 : "Process Salary Payment"}
             </DialogTitle>
           </DialogHeader>
-          <SalaryPaymentForm
-            staffId={selectedStaffId}
-            paymentData={selectedPayment}
-            onSuccess={handleFormSuccess}
-            onCancel={() => setShowPaymentForm(false)}
-          />
+          <div className="max-h-[calc(90vh-100px)] overflow-y-auto pr-2">
+            <SalaryPaymentForm
+              staffId={selectedStaffId}
+              paymentData={selectedPayment}
+              onSuccess={handleFormSuccess}
+              onCancel={() => setShowPaymentForm(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1343,15 +1331,86 @@ export default function PayrollDashboard() {
                   </div>
                 )}
 
-              {/* Deductions */}
+              {/* Statutory Deductions */}
+              {selectedPayment.statutoryDeductions && (
+                <div>
+                  <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">
+                    Statutory Deductions
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedPayment.statutoryDeductions.nhf > 0 && (
+                      <div className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-700 dark:bg-orange-900/30">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          NHF (2.5%)
+                        </span>
+                        <span className="font-bold text-orange-700 dark:text-orange-400">
+                          -{formatCurrency(selectedPayment.statutoryDeductions.nhf)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPayment.statutoryDeductions.pensionEmployee > 0 && (
+                      <div className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-700 dark:bg-orange-900/30">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          Pension - Employee (8%)
+                        </span>
+                        <span className="font-bold text-orange-700 dark:text-orange-400">
+                          -{formatCurrency(selectedPayment.statutoryDeductions.pensionEmployee)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPayment.statutoryDeductions.pensionEmployer > 0 && (
+                      <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-700 dark:bg-blue-900/30">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          Pension - Employer (10%)
+                        </span>
+                        <span className="font-bold text-blue-700 dark:text-blue-400">
+                          {formatCurrency(selectedPayment.statutoryDeductions.pensionEmployer)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPayment.statutoryDeductions.nhis > 0 && (
+                      <div className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-700 dark:bg-orange-900/30">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          NHIS (5%)
+                        </span>
+                        <span className="font-bold text-orange-700 dark:text-orange-400">
+                          -{formatCurrency(selectedPayment.statutoryDeductions.nhis)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedPayment.statutoryDeductions.paye > 0 && (
+                      <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/30">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          PAYE Tax
+                        </span>
+                        <span className="font-bold text-red-700 dark:text-red-400">
+                          -{formatCurrency(selectedPayment.statutoryDeductions.paye)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-gray-100 p-3 dark:border-gray-600 dark:bg-gray-800">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                        Total Statutory (Employee)
+                      </span>
+                      <span className="font-bold text-gray-900 dark:text-gray-100">
+                        -{formatCurrency(selectedPayment.statutoryDeductions.totalEmployeeDeductions)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other Deductions */}
               {selectedPayment.deductions &&
-                selectedPayment.deductions.length > 0 && (
+                selectedPayment.deductions.filter(d => !d.isStatutory).length > 0 && (
                   <div>
                     <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">
-                      Deductions
+                      Other Deductions
                     </h3>
                     <div className="space-y-2">
-                      {selectedPayment.deductions.map((deduction, index) => (
+                      {selectedPayment.deductions
+                        .filter(d => !d.isStatutory)
+                        .map((deduction, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between rounded-lg border border-red-200 bg-red-100 p-3 dark:border-red-700 dark:bg-red-900/30"

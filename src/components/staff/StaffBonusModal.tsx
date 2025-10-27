@@ -69,7 +69,7 @@ export default function StaffBonusModal({
       setBonuses(
         staffBonuses.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(Number(b.createdAt) / 1_000_000).getTime() - new Date(Number(a.createdAt) / 1_000_000).getTime(),
         ),
       );
     } catch (error) {
@@ -276,49 +276,55 @@ export default function StaffBonusModal({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Stats */}
+          {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border bg-green-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Total Paid</p>
-              <p className="text-2xl font-bold text-green-700">
-                {formatCurrency(totalBonuses)}
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 text-center shadow-sm dark:border-green-800 dark:bg-green-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Paid</p>
+              <p className="mt-1 text-2xl font-bold text-green-700 dark:text-green-400">
+                ₦{totalBonuses.toLocaleString()}
               </p>
             </div>
-            <div className="rounded-lg border bg-yellow-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-700">
+            <div className="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-4 text-center shadow-sm dark:border-yellow-800 dark:bg-yellow-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending</p>
+              <p className="mt-1 text-2xl font-bold text-yellow-700 dark:text-yellow-400">
                 {pendingBonuses}
               </p>
             </div>
-            <div className="rounded-lg border bg-blue-50 p-4 text-center">
-              <p className="text-sm text-gray-600">Total Bonuses</p>
-              <p className="text-2xl font-bold text-blue-700">
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4 text-center shadow-sm dark:border-blue-800 dark:bg-blue-900/20">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Bonuses</p>
+              <p className="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-400">
                 {bonuses.length}
               </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               onClick={() => setShowNewBonusForm(!showNewBonusForm)}
               disabled={loading}
+              size="lg"
+              className="w-full sm:w-auto"
             >
-              {showNewBonusForm ? "Cancel" : "New Bonus"}
+              <Gift className="mr-2 h-4 w-4" />
+              {showNewBonusForm ? "Cancel" : "Create New Bonus"}
             </Button>
             <div className="flex gap-2">
+              <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                Filter:
+              </label>
               <Select
                 value={filterStatus}
                 onValueChange={(v) => setFilterStatus(v as 'all' | 'pending' | 'paid' | 'cancelled')}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="pending">🕒 Pending</SelectItem>
+                  <SelectItem value="paid">✓ Paid</SelectItem>
+                  <SelectItem value="cancelled">✕ Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -328,9 +334,10 @@ export default function StaffBonusModal({
           {showNewBonusForm && (
             <form
               onSubmit={handleCreateBonus}
-              className="rounded-lg border bg-gray-50 p-4"
+              className="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 shadow-md dark:border-blue-800 dark:from-blue-900/20 dark:to-gray-900"
             >
-              <h3 className="mb-4 font-semibold">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+                <Gift className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 {editingBonus ? "Edit Bonus" : "Create New Bonus"}
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -454,10 +461,15 @@ export default function StaffBonusModal({
 
           {/* Bonus List */}
           <div className="space-y-4">
-            <h3 className="font-semibold">
-              Bonus History ({filteredBonuses.length}
-              {filterStatus !== "all" && ` ${filterStatus}`})
-            </h3>
+            <div className="flex items-center gap-2 border-b pb-2">
+              <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Bonus History
+                <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
+                  ({filteredBonuses.length} {filterStatus !== "all" && `${filterStatus} `}bonus{filteredBonuses.length !== 1 ? 'es' : ''})
+                </span>
+              </h3>
+            </div>
             {filteredBonuses.length === 0 ? (
               <div className="py-12 text-center text-gray-500">
                 <Gift className="mx-auto mb-4 h-12 w-12 opacity-50" />
@@ -467,31 +479,36 @@ export default function StaffBonusModal({
               filteredBonuses.map((bonus) => (
                 <div
                   key={bonus.id}
-                  className="rounded-lg border p-4 transition-shadow hover:shadow-md"
+                  className="rounded-lg border-2 border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-blue-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-700"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <h4 className="font-semibold">{bonus.reason}</h4>
+                      <div className="mb-2 flex items-center gap-2">
                         {getStatusIcon(bonus.status)}
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">{bonus.reason}</h4>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {getBonusTypeLabel(bonus.type)} •{" "}
-                        {getMonthName(bonus.month)} {bonus.year}
-                      </p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline" className="font-medium">
+                          {getBonusTypeLabel(bonus.type)}
+                        </Badge>
+                        <span className="text-gray-600 dark:text-gray-400">•</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {getMonthName(bonus.month)} {bonus.year}
+                        </span>
+                      </div>
                       {bonus.paidDate && (
                         <p className="mt-1 text-xs text-gray-500">
                           Paid on:{" "}
-                          {new Date(bonus.paidDate).toLocaleDateString()}
+                          {new Date(Number(bonus.paidDate) / 1_000_000).toLocaleDateString()}
                         </p>
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-green-700">
-                        {formatCurrency(bonus.amount)}
+                      <p className="mb-2 text-3xl font-bold text-green-600 dark:text-green-400">
+                        ₦{bonus.amount.toLocaleString()}
                       </p>
                       <Badge
-                        className={getStatusColor(bonus.status)}
+                        className={`${getStatusColor(bonus.status)} border-2 px-3 py-1 text-xs font-bold uppercase`}
                         variant="secondary"
                       >
                         {bonus.status}
@@ -534,7 +551,7 @@ export default function StaffBonusModal({
                       <span>Approved by: {bonus.approvedBy}</span>
                       <span>
                         Created:{" "}
-                        {new Date(bonus.createdAt).toLocaleDateString()}
+                        {new Date(Number(bonus.createdAt) / 1_000_000).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

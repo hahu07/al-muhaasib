@@ -6,7 +6,8 @@ import type {
   FeeItem,
   StudentFeeItem,
 } from "@/types";
-
+import { nanoid } from "nanoid";
+import { autoPostingService } from "./autoPostingService";
 export class FeeCategoryService extends BaseDataService<FeeCategory> {
   constructor() {
     super(COLLECTIONS.FEE_CATEGORIES);
@@ -356,6 +357,31 @@ export class StudentFeeAssignmentService extends BaseDataService<StudentFeeAssig
       status: "unpaid",
       dueDate,
     });
+
+    // Auto-post journal entry for fee assignment (recognizes revenue and receivable)
+    try {
+      const feeAllocations = studentFeeItems.map((item) => ({
+        feeType: item.type,
+        amount: item.amount,
+      }));
+
+      await autoPostingService.postFeeAssignment(
+        studentName,
+        studentId, // Using studentId as admission number reference
+        feeAllocations,
+        {
+          description: `Fees assigned to ${studentName} - ${className} (${academicYear} ${term} term)`,
+          reference: assignment.id,
+          transactionDate: new Date().toISOString().split("T")[0],
+          createdBy: "system", // This should be passed from the calling context ideally
+          autoPost: true,
+        },
+      );
+    } catch (error) {
+      console.error("Failed to auto-post fee assignment journal entry:", error);
+      // Don't fail the assignment if journal entry fails
+      // The entry can be created manually later
+    }
 
     // Update student's fee totals
     try {

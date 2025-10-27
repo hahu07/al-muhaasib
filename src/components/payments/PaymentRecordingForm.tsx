@@ -20,6 +20,7 @@ import {
   studentFeeAssignmentService,
 } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchool } from "@/contexts/SchoolContext";
 import type {
   StudentProfile,
   Payment,
@@ -39,6 +40,7 @@ export const PaymentRecordingForm: React.FC<PaymentRecordingFormProps> = ({
   onCancel,
 }) => {
   const { user, appUser, loading: authLoading } = useAuth();
+  const { formatCurrency } = useSchool();
   const [loading, setLoading] = useState(false);
   const [loadingAssignments, setLoadingAssignments] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -256,13 +258,13 @@ export const PaymentRecordingForm: React.FC<PaymentRecordingFormProps> = ({
               Total Fees:
             </span>
             <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">
-              ₦{student.totalFeesAssigned.toLocaleString()}
+              {formatCurrency(student.totalFeesAssigned)}
             </span>
           </div>
           <div>
             <span className="text-gray-600 dark:text-gray-400">Paid:</span>
             <span className="ml-2 font-medium text-green-600 dark:text-green-400">
-              ₦{student.totalPaid.toLocaleString()}
+              {formatCurrency(student.totalPaid)}
             </span>
           </div>
           <div className="col-span-2">
@@ -270,7 +272,7 @@ export const PaymentRecordingForm: React.FC<PaymentRecordingFormProps> = ({
               Outstanding Balance:
             </span>
             <span className="ml-2 text-lg font-bold text-red-600 dark:text-red-400">
-              ₦{outstandingBalance.toLocaleString()}
+              {formatCurrency(outstandingBalance)}
             </span>
             {loadingAssignments && (
               <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">

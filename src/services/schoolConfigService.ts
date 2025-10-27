@@ -341,6 +341,47 @@ export class SchoolConfigService {
   }
 
   /**
+   * Get the default bank account for a specific transaction type
+   * Falls back to first active bank account if not configured
+   * @param type - Transaction type (e.g., "feePayments", "expenses", "contributions")
+   */
+  async getDefaultBankAccount(type?: string): Promise<string | null> {
+    try {
+      const config = await this.getConfig();
+      
+      // If type is specified and configured, use it
+      if (type && config?.defaultBankAccounts?.[type]) {
+        return config.defaultBankAccounts[type];
+      }
+      
+      // Fallback to first active bank account
+      const { bankAccountService } = await import("./accountingService");
+      const accounts = await bankAccountService.list();
+      const activeAccount = accounts.find((acc) => acc.isActive);
+      return activeAccount?.id || null;
+    } catch (error) {
+      console.error("Failed to get default bank account:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Update default bank accounts configuration
+   * Supports any custom transaction types
+   */
+  async updateDefaultBankAccounts(
+    id: string,
+    defaultBankAccounts: Record<string, string>
+  ): Promise<SchoolConfig> {
+    try {
+      return this.updateConfig(id, { defaultBankAccounts });
+    } catch (error) {
+      console.error("Error updating default bank accounts:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Helper: Map Juno document to SchoolConfig
    */
   private mapDocToConfig(doc: Doc<Record<string, unknown>>): SchoolConfig {
@@ -379,6 +420,7 @@ export class SchoolConfigService {
         | "online"
         | "cheque"
       )[],
+      defaultBankAccounts: data.defaultBankAccounts as Record<string, string> | undefined,
       reportHeader: data.reportHeader as string | undefined,
       reportFooter: data.reportFooter as string | undefined,
       customFields: data.customFields as Record<string, unknown> | undefined,
@@ -427,6 +469,7 @@ export class SchoolConfigService {
       allowPartialPayments: config.allowPartialPayments,
       lateFeePercentage: config.lateFeePercentage,
       defaultPaymentMethods: config.defaultPaymentMethods,
+      defaultBankAccounts: config.defaultBankAccounts,
       reportHeader: config.reportHeader,
       reportFooter: config.reportFooter,
       customFields: config.customFields,

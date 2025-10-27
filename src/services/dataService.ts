@@ -46,6 +46,14 @@ export const COLLECTIONS = {
   CHART_OF_ACCOUNTS: "chart_of_accounts",
   JOURNAL_ENTRIES: "journal_entries",
   BANK_ACCOUNTS: "bank_accounts",
+  ACCOUNT_MAPPINGS: "account_mappings",
+
+  // Banking Module (optional)
+  BANK_TRANSACTIONS: "bank_transactions",
+  BANK_STATEMENTS: "bank_statements",
+  BANK_RECONCILIATIONS: "bank_reconciliations",
+  INTER_ACCOUNT_TRANSFERS: "inter_account_transfers",
+  CASH_FLOW_PROJECTIONS: "cash_flow_projections",
 
   // Users
   USERS: "users",
@@ -112,7 +120,7 @@ export class BaseDataService<T extends Record<string, unknown>> {
   }
 
   // Helper to convert bigint values to numbers for Juno Build serialization
-  private serializeBigInts(obj: unknown): unknown {
+  protected serializeBigInts(obj: unknown): unknown {
     if (obj === null || obj === undefined) return obj;
 
     if (typeof obj === "bigint") {
@@ -135,7 +143,7 @@ export class BaseDataService<T extends Record<string, unknown>> {
   }
 
   // Helper to convert numbers back to bigint for timestamp fields
-  private deserializeBigInts(obj: unknown): unknown {
+  protected deserializeBigInts(obj: unknown): unknown {
     if (obj === null || obj === undefined) return obj;
 
     if (Array.isArray(obj)) {
@@ -173,11 +181,16 @@ export class BaseDataService<T extends Record<string, unknown>> {
       const id = nanoid();
       // Convert to nanoseconds (Unix timestamp in nanoseconds for IC)
       const nowNanos = BigInt(Date.now()) * BigInt(1_000_000);
+      
+      // Check if timestamps are already provided (for special cases like expense approval)
+      const hasCreatedAt = 'createdAt' in data && typeof (data as Record<string, unknown>).createdAt === 'bigint';
+      const hasUpdatedAt = 'updatedAt' in data && typeof (data as Record<string, unknown>).updatedAt === 'bigint';
+      
       const doc = {
         id,
         ...data,
-        createdAt: nowNanos,
-        updatedAt: nowNanos,
+        createdAt: hasCreatedAt ? (data as Record<string, unknown>).createdAt : nowNanos,
+        updatedAt: hasUpdatedAt ? (data as Record<string, unknown>).updatedAt : nowNanos,
       } as unknown as T;
 
       // Convert bigint to number for serialization (Juno Build expects numbers)
@@ -197,6 +210,47 @@ export class BaseDataService<T extends Record<string, unknown>> {
       return doc;
     } catch (error) {
       console.error(`Error creating ${this.collection}:`, error);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new DataServiceError(`Failed to create ${this.collection}: ${msg}`);
+    }
+  }
+
+  /**
+   * Create a document with a specific ID (for cases like expense approval where we want to preserve the ID)
+   */
+  async createWithId(id: string, data: Omit<T, "id" | "createdAt" | "updatedAt">): Promise<T> {
+    try {
+      // Convert to nanoseconds (Unix timestamp in nanoseconds for IC)
+      const nowNanos = BigInt(Date.now()) * BigInt(1_000_000);
+      
+      // Check if timestamps are already provided (for special cases like expense approval)
+      const hasCreatedAt = 'createdAt' in data && typeof (data as Record<string, unknown>).createdAt === 'bigint';
+      const hasUpdatedAt = 'updatedAt' in data && typeof (data as Record<string, unknown>).updatedAt === 'bigint';
+      
+      const doc = {
+        id,
+        ...data,
+        createdAt: hasCreatedAt ? (data as Record<string, unknown>).createdAt : nowNanos,
+        updatedAt: hasUpdatedAt ? (data as Record<string, unknown>).updatedAt : nowNanos,
+      } as unknown as T;
+
+      // Convert bigint to number for serialization (Juno Build expects numbers)
+      const serializedDoc = this.serializeBigInts(doc);
+
+      await setDoc({
+        collection: this.collection,
+        doc: {
+          key: id,
+          data: serializedDoc as Record<string, unknown>,
+        },
+      });
+
+      // Clear cache
+      this.cache.clear();
+
+      return doc;
+    } catch (error) {
+      console.error(`Error creating ${this.collection} with ID ${id}:`, error);
       const msg = error instanceof Error ? error.message : String(error);
       throw new DataServiceError(`Failed to create ${this.collection}: ${msg}`);
     }
@@ -235,13 +289,32 @@ export class BaseDataService<T extends Record<string, unknown>> {
         filter,
       });
 
-      const data = items.map((item) => this.deserializeBigInts(item.data) as T);
+      const data = items.map((item) => {
+        const deserializedData = this.deserializeBigInts(item.data) as T;
+        // Ensure the document has an id field from the Juno key
+        return {
+          ...deserializedData,
+          id: item.key,
+        };
+      });
       this.cache.set(cacheKey, data);
       return data;
     } catch (error) {
       console.error(`Error listing ${this.collection}:`, error);
       throw new DataServiceError(`Failed to list ${this.collection}`);
     }
+  }
+
+  /**
+   * List documents with full metadata (including version)
+   * Useful when you need the version for updates
+   */
+  protected async listDocsRaw(filter?: Record<string, unknown>) {
+    const { items } = await listDocs({
+      collection: this.collection,
+      filter,
+    });
+    return items;
   }
 
   async count(filter?: Record<string, unknown>): Promise<number> {
@@ -346,14 +419,18 @@ export class StudentService extends BaseDataService<StudentProfile> {
     return students.filter((student) => {
       const balance = student.balance;
       const totalPaid = student.totalPaid;
+      const totalFees = student.totalFeesAssigned;
 
       switch (status) {
         case "paid":
-          return balance === 0;
+          // Fully paid: has fees assigned, balance is 0, and has made payments
+          return totalFees > 0 && balance === 0 && totalPaid > 0;
         case "partial":
+          // Partial payment: has fees, has paid something, but still owes
           return balance > 0 && totalPaid > 0;
         case "pending":
-          return balance > 0 && totalPaid === 0;
+          // No payment yet: has fees assigned but hasn't paid anything
+          return totalFees > 0 && balance > 0 && totalPaid === 0;
         case "overdue":
           // Consider overdue if balance > 0 and admission date is more than 60 days ago
           const admissionDate = new Date(student.admissionDate);

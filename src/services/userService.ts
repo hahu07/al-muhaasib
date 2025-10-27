@@ -159,6 +159,13 @@ function getDefaultPermissions(role: UserRole): string[] {
         "accounting.post_entries",
         "accounting.reverse_entries",
         "accounting.manage_coa",
+        // Banking
+        "banking.view",
+        "banking.create_transactions",
+        "banking.reconcile",
+        "banking.transfer",
+        "banking.approve_transfer",
+        "banking.import_statements",
         // Reports
         "reports.view",
         "reports.financial",
@@ -211,6 +218,13 @@ function getDefaultPermissions(role: UserRole): string[] {
         "accounting.create_entries",
         "accounting.post_entries",
         "accounting.manage_coa",
+        // Banking
+        "banking.view",
+        "banking.create_transactions",
+        "banking.reconcile",
+        "banking.transfer",
+        "banking.approve_transfer",
+        "banking.import_statements",
         // Reports
         "reports.view",
         "reports.financial",
@@ -251,6 +265,11 @@ function getDefaultPermissions(role: UserRole): string[] {
         "accounting.view",
         "accounting.create_entries",
         "accounting.post_entries",
+        // Banking
+        "banking.view",
+        "banking.create_transactions",
+        "banking.reconcile",
+        "banking.transfer",
         // Reports
         "reports.view",
         "reports.financial",
@@ -269,6 +288,7 @@ function getDefaultPermissions(role: UserRole): string[] {
         "staff.view",
         "assets.view",
         "accounting.view",
+        "banking.view",
         "reports.view",
         "reports.financial",
         "reports.audit",

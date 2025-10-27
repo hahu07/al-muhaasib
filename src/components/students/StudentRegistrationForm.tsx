@@ -255,11 +255,14 @@ export const StudentRegistrationForm: React.FC<
                   disabled={loadingClasses}
                 >
                   <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        loadingClasses ? "Loading classes..." : "Select a class"
-                      }
-                    />
+                    {(() => {
+                      if (loadingClasses) return "Loading classes...";
+                      if (!formData.classId) return "Select a class";
+                      const selectedClass = classes.find((c) => c.id === formData.classId);
+                      return selectedClass
+                        ? `${selectedClass.name}${selectedClass.section ? ` ${selectedClass.section}` : ""} (${selectedClass.currentEnrollment}/${selectedClass.capacity})`
+                        : "Select a class";
+                    })()}
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map((c) => (

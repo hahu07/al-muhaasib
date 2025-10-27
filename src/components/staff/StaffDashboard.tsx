@@ -235,6 +235,124 @@ export default function StaffDashboard() {
     ).sort();
   };
 
+  const handleExportStaff = () => {
+    try {
+      const exportDate = new Date().toLocaleString();
+
+      // Helper function to escape CSV values
+      const escapeCSV = (value: string | number | boolean | undefined | null) => {
+        if (value === null || value === undefined) return "";
+        const str = String(value);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Build CSV content
+      const csvLines: string[] = [];
+
+      // Title row
+      csvLines.push(`"STAFF MANAGEMENT REPORT"`);
+      csvLines.push(`"Generated: ${exportDate} | Total Staff: ${filteredStaff.length}"`);
+      csvLines.push(""); // Empty line
+
+      // Headers
+      const headers = [
+        "No",
+        "Staff Number",
+        "First Name",
+        "Surname",
+        "Position",
+        "Department",
+        "Employment Type",
+        "Phone",
+        "Email",
+        "Basic Salary",
+        "Total Compensation",
+        "Employment Date",
+        "Status",
+        "Bank Name",
+        "Account Number",
+      ];
+      csvLines.push(headers.join(","));
+
+      // Data rows
+      filteredStaff.forEach((staffMember, index) => {
+        const totalComp = staffService.calculateTotalCompensation(staffMember);
+        const row = [
+          (index + 1).toString(),
+          escapeCSV(staffMember.staffNumber),
+          escapeCSV(staffMember.firstname),
+          escapeCSV(staffMember.surname),
+          escapeCSV(staffMember.position),
+          escapeCSV(staffMember.department || ""),
+          escapeCSV(staffMember.employmentType),
+          escapeCSV(staffMember.phone),
+          escapeCSV(staffMember.email || ""),
+          staffMember.basicSalary.toFixed(2),
+          totalComp.toFixed(2),
+          new Date(staffMember.employmentDate).toLocaleDateString("en-GB"),
+          escapeCSV(staffMember.isActive ? "Active" : "Inactive"),
+          escapeCSV(staffMember.bankName || ""),
+          escapeCSV(staffMember.accountNumber || ""),
+        ];
+        csvLines.push(row.join(","));
+      });
+
+      // Summary section at bottom
+      csvLines.push(""); // Empty line
+      csvLines.push("Summary,Value");
+      csvLines.push(`Total Staff,${filteredStaff.length}`);
+      csvLines.push(
+        `Active Staff,${filteredStaff.filter((s) => s.isActive).length}`,
+      );
+      csvLines.push(
+        `Inactive Staff,${filteredStaff.filter((s) => !s.isActive).length}`,
+      );
+      const totalPayroll = filteredStaff.reduce(
+        (sum, s) => sum + staffService.calculateTotalCompensation(s),
+        0,
+      );
+      csvLines.push(`Total Monthly Payroll,${totalPayroll.toFixed(2)}`);
+      csvLines.push(`Average Compensation,${filteredStaff.length > 0 ? (totalPayroll / filteredStaff.length).toFixed(2) : "0.00"}`);
+
+      // Create CSV content
+      const csvContent = csvLines.join("\n");
+
+      // Add BOM for proper Excel/Calc UTF-8 encoding
+      const BOM = "\uFEFF";
+      const blob = new Blob([BOM + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      const filename = `Staff_Report_${new Date().getTime()}.csv`;
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+
+      toast({
+        title: "Export Successful",
+        description: `Exported ${filteredStaff.length} staff member(s) to ${filename}`,
+      });
+    } catch (error) {
+      console.error("Error exporting staff:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export staff data",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -450,7 +568,12 @@ export default function StaffDashboard() {
                 </div>
 
                 <div className="flex items-end">
-                  <Button variant="outline" className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleExportStaff}
+                    disabled={filteredStaff.length === 0}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Export
                   </Button>
@@ -919,14 +1042,6 @@ export default function StaffDashboard() {
                               <span className="font-medium text-gray-900 dark:text-gray-100">
                                 {allowance.name}
                               </span>
-                              {allowance.isRecurring && (
-                                <Badge
-                                  variant="outline"
-                                  className="ml-2 px-2 py-0 text-xs"
-                                >
-                                  🔄 Recurring
-                                </Badge>
-                              )}
                             </div>
                             <span className="text-lg font-bold text-green-600 dark:text-green-400">
                               {formatCurrency(allowance.amount)}

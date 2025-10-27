@@ -34,6 +34,8 @@ import {
 import { schoolConfigService } from "@/services/schoolConfigService";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SchoolConfig, AcademicTerm, ModuleName } from "@/types";
+import { EnhancedBrandingSettings } from "@/components/settings/EnhancedBrandingSettings";
+import { BankAccountSettings } from "@/components/settings/BankAccountSettings";
 
 type TabType =
   | "general"
@@ -610,153 +612,7 @@ export default function SettingsPage() {
         )}
 
         {/* Branding Settings */}
-        {activeTab === "branding" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Branding & Appearance
-              </CardTitle>
-              <CardDescription>
-                Customize your school&apos;s colors and logo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div>
-                  <Label htmlFor="primaryColor">Primary Color</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      id="primaryColor"
-                      type="color"
-                      value={brandingForm.primaryColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          primaryColor: e.target.value,
-                        })
-                      }
-                      className="h-10 w-20"
-                    />
-                    <Input
-                      value={brandingForm.primaryColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          primaryColor: e.target.value,
-                        })
-                      }
-                      placeholder="#4F46E5"
-                      className="flex-1"
-                    />
-                  </div>
-                  <div
-                    className="mt-2 h-16 rounded-lg border-2"
-                    style={{ backgroundColor: brandingForm.primaryColor }}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="secondaryColor">Secondary Color</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      id="secondaryColor"
-                      type="color"
-                      value={brandingForm.secondaryColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          secondaryColor: e.target.value,
-                        })
-                      }
-                      className="h-10 w-20"
-                    />
-                    <Input
-                      value={brandingForm.secondaryColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          secondaryColor: e.target.value,
-                        })
-                      }
-                      placeholder="#7C3AED"
-                      className="flex-1"
-                    />
-                  </div>
-                  <div
-                    className="mt-2 h-16 rounded-lg border-2"
-                    style={{ backgroundColor: brandingForm.secondaryColor }}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="accentColor">Accent Color</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Input
-                      id="accentColor"
-                      type="color"
-                      value={brandingForm.accentColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          accentColor: e.target.value,
-                        })
-                      }
-                      className="h-10 w-20"
-                    />
-                    <Input
-                      value={brandingForm.accentColor}
-                      onChange={(e) =>
-                        setBrandingForm({
-                          ...brandingForm,
-                          accentColor: e.target.value,
-                        })
-                      }
-                      placeholder="#EC4899"
-                      className="flex-1"
-                    />
-                  </div>
-                  <div
-                    className="mt-2 h-16 rounded-lg border-2"
-                    style={{ backgroundColor: brandingForm.accentColor }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="logo">School Logo URL</Label>
-                <Input
-                  id="logo"
-                  value={brandingForm.logo}
-                  onChange={(e) =>
-                    setBrandingForm({ ...brandingForm, logo: e.target.value })
-                  }
-                  placeholder="/logo.png or https://..."
-                  className="mt-2"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter a URL or path to your school logo image
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleSaveBranding} disabled={saving}>
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {activeTab === "branding" && <EnhancedBrandingSettings />}
 
         {/* Academic Settings */}
         {activeTab === "academic" && (
@@ -1028,6 +884,11 @@ export default function SettingsPage() {
                     label: "Accounting",
                     description: "Chart of accounts and journal entries",
                   },
+                  {
+                    id: "banking",
+                    label: "Banking",
+                    description: "Bank transactions, reconciliation, and cash flow",
+                  },
                 ].map((module) => (
                   <div
                     key={module.id}
@@ -1234,6 +1095,11 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Bank Account Settings - only shown in Payments tab */}
+        {activeTab === "payments" && config && (
+          <BankAccountSettings config={config} onUpdate={loadConfig} />
         )}
       </div>
 

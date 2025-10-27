@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { expenseService } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchool } from "@/contexts/SchoolContext";
 import type { Expense } from "@/types";
 import {
   DollarSignIcon,
@@ -31,6 +32,7 @@ type ActiveTab = "overview" | "record" | "list" | "categories" | "approvals";
 export const ExpenseManagement: React.FC = () => {
   const router = useRouter();
   const { appUser } = useAuth();
+  const { formatCurrency } = useSchool();
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [showRecordModal, setShowRecordModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -89,15 +91,6 @@ export const ExpenseManagement: React.FC = () => {
   };
 
   const summary = getExpenseSummary();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const tabs = [
     {

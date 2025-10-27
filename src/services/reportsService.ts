@@ -24,12 +24,21 @@ export interface IncomeStatementLine {
   type: "revenue" | "expense";
 }
 
+export interface CategoryGroup {
+  categoryCode: string;
+  categoryName: string;
+  items: IncomeStatementLine[];
+  subtotal: number;
+}
+
 export interface IncomeStatement {
   period: string;
   startDate: string;
   endDate: string;
   revenue: IncomeStatementLine[];
   expenses: IncomeStatementLine[];
+  revenueByCategory: CategoryGroup[];
+  expensesByCategory: CategoryGroup[];
   totalRevenue: number;
   totalExpenses: number;
   netIncome: number;
@@ -154,6 +163,26 @@ export interface DepreciationSchedule {
 
 export class ReportsService {
   /**
+   * Helper: Group income statement lines by category
+   * Each account becomes its own category with all its detail accounts as items
+   */
+  private groupByCategory(
+    lines: IncomeStatementLine[],
+    accounts: Map<string, ChartOfAccounts>,
+  ): CategoryGroup[] {
+    // For now, treat each line as its own category
+    // This can be enhanced later to support hierarchical grouping
+    const groups: CategoryGroup[] = lines.map((line) => ({
+      categoryCode: line.accountCode,
+      categoryName: line.accountName,
+      items: [line],
+      subtotal: line.amount,
+    }));
+
+    return groups.sort((a, b) => a.categoryCode.localeCompare(b.categoryCode));
+  }
+
+  /**
    * Generate Income Statement
    */
   async generateIncomeStatement(
@@ -209,6 +238,10 @@ export class ReportsService {
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netIncome = totalRevenue - totalExpenses;
 
+    // Group by category
+    const revenueByCategory = this.groupByCategory(revenue, accountMap);
+    const expensesByCategory = this.groupByCategory(expenses, accountMap);
+
     return {
       period: `${startDate} to ${endDate}`,
       startDate,
@@ -219,6 +252,8 @@ export class ReportsService {
       expenses: expenses.sort((a, b) =>
         a.accountCode.localeCompare(b.accountCode),
       ),
+      revenueByCategory,
+      expensesByCategory,
       totalRevenue,
       totalExpenses,
       netIncome,

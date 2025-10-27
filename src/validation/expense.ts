@@ -17,7 +17,10 @@ export const expenseFormSchema = z
     vendorContact: z
       .string()
       .trim()
-      .regex(/^[\d\s\-+()]+$/, "Invalid contact format")
+      .refine(
+        (val) => !val || /^[\d\s\-+()]+$/.test(val),
+        "Invalid contact format - only digits, spaces, hyphens, plus signs, and parentheses allowed"
+      )
       .optional(),
     notes: z.string().trim().optional(),
   })

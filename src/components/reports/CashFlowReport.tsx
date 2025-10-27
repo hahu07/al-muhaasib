@@ -16,6 +16,7 @@ import {
   DollarSign,
   Wallet,
 } from "lucide-react";
+import { useSchool } from "@/contexts/SchoolContext";
 import {
   reportsService,
   type CashFlowStatement,
@@ -31,6 +32,7 @@ interface CashFlowReportProps {
 }
 
 const CashFlowReport: React.FC<CashFlowReportProps> = ({ filters, onBack }) => {
+  const { formatCurrency } = useSchool();
   const [cashFlowStatement, setCashFlowStatement] =
     useState<CashFlowStatement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,13 +62,6 @@ const CashFlowReport: React.FC<CashFlowReportProps> = ({ filters, onBack }) => {
 
   const exportReport = () => {
     console.log("Exporting Cash Flow Statement...");
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-    }).format(amount);
   };
 
   if (loading) {

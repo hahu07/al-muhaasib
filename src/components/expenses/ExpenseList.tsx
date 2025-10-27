@@ -24,6 +24,8 @@ import {
   FileTextIcon,
   AlertCircleIcon,
   MoreVerticalIcon,
+  DownloadIcon,
+  PrinterIcon,
 } from "lucide-react";
 
 interface ExpenseListProps {
@@ -226,6 +228,162 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
   // Get unique categories for filter
   const uniqueCategories = Array.from(new Set(expenses.map((e) => e.category)));
 
+  const handleExportCSV = () => {
+    // Generate CSV content
+    const headers = [
+      "Date",
+      "Description",
+      "Category",
+      "Amount",
+      "Payment Method",
+      "Vendor",
+      "Reference",
+      "Status",
+      "Recorded By",
+    ];
+
+    const rows = filteredExpenses.map((expense) => [
+      formatDate(expense.paymentDate),
+      expense.description,
+      expense.categoryName,
+      expense.amount,
+      expense.paymentMethod.replace("_", " "),
+      expense.vendorName || "",
+      expense.reference,
+      expense.status,
+      expense.recordedBy,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expenses-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    // Create a printable version
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to print");
+      return;
+    }
+
+    const totalAmount = filteredExpenses.reduce(
+      (sum, expense) => sum + expense.amount,
+      0,
+    );
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Expenses Report</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            h1 {
+              text-align: center;
+              color: #1a202c;
+              margin-bottom: 10px;
+            }
+            .report-info {
+              text-align: center;
+              margin-bottom: 30px;
+              color: #666;
+              font-size: 14px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: left;
+            }
+            th {
+              background-color: #3182ce;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f8f9fa;
+            }
+            .status-pending { color: #d97706; font-weight: bold; }
+            .status-approved { color: #2563eb; font-weight: bold; }
+            .status-paid { color: #059669; font-weight: bold; }
+            .status-rejected { color: #dc2626; font-weight: bold; }
+            .total-row {
+              font-weight: bold;
+              background-color: #e2e8f0 !important;
+              font-size: 16px;
+            }
+            @media print {
+              body { margin: 0; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Expenses Report</h1>
+          <div class="report-info">
+            <p>Generated on: ${new Date().toLocaleString("en-NG")}</p>
+            <p>Total Expenses: ${filteredExpenses.length}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Vendor</th>
+                <th>Status</th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredExpenses
+                .map(
+                  (expense) => `
+                <tr>
+                  <td>${formatDate(expense.paymentDate)}</td>
+                  <td>${expense.description}</td>
+                  <td>${expense.categoryName}</td>
+                  <td>${formatCurrency(expense.amount)}</td>
+                  <td>${expense.vendorName || "N/A"}</td>
+                  <td class="status-${expense.status}">${expense.status.toUpperCase()}</td>
+                  <td>${expense.reference}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+              <tr class="total-row">
+                <td colspan="3">TOTAL</td>
+                <td>${formatCurrency(totalAmount)}</td>
+                <td colspan="3"></td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -238,6 +396,34 @@ export const ExpenseList: React.FC<ExpenseListProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Filters */}
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        {/* Action Buttons Row */}
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Expense Filters
+          </h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={filteredExpenses.length === 0}
+              className="flex items-center gap-2"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              disabled={filteredExpenses.length === 0}
+              className="flex items-center gap-2"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              Print
+            </Button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {/* Search */}
           <div className="relative">

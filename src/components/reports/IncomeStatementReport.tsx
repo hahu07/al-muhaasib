@@ -11,7 +11,9 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  MinusCircle,
 } from "lucide-react";
+import { useSchool } from "@/contexts/SchoolContext";
 import {
   reportsService,
   type IncomeStatement,
@@ -30,6 +32,7 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
   filters,
   onBack,
 }) => {
+  const { formatCurrency } = useSchool();
   const [incomeStatement, setIncomeStatement] =
     useState<IncomeStatement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,13 +62,6 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
   const exportReport = () => {
     // Implement PDF/Excel export
     console.log("Exporting Income Statement...");
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-    }).format(amount);
   };
 
   if (loading) {
@@ -198,7 +194,7 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
                 {incomeStatement.revenue.map((item, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between border-b border-gray-100 py-2"
+                    className="flex items-center justify-between py-3"
                   >
                     <div>
                       <span className="font-medium">{item.accountName}</span>
@@ -206,12 +202,13 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
                         ({item.accountCode})
                       </span>
                     </div>
-                    <span className="font-medium text-green-600">
+                    <span className="font-semibold text-green-600">
                       {formatCurrency(item.amount)}
                     </span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between border-t-2 border-green-200 pt-4">
+                {/* Total Revenue */}
+                <div className="flex items-center justify-between border-t-2 border-green-300 pt-4 mt-2">
                   <span className="text-lg font-bold text-green-700">
                     TOTAL REVENUE
                   </span>
@@ -231,7 +228,7 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
                 {incomeStatement.expenses.map((item, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between border-b border-gray-100 py-2"
+                    className="flex items-center justify-between py-3"
                   >
                     <div>
                       <span className="font-medium">{item.accountName}</span>
@@ -239,12 +236,13 @@ const IncomeStatementReport: React.FC<IncomeStatementReportProps> = ({
                         ({item.accountCode})
                       </span>
                     </div>
-                    <span className="font-medium text-red-600">
+                    <span className="font-semibold text-red-600">
                       {formatCurrency(item.amount)}
                     </span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between border-t-2 border-red-200 pt-4">
+                {/* Total Expenses */}
+                <div className="flex items-center justify-between border-t-2 border-red-300 pt-4 mt-2">
                   <span className="text-lg font-bold text-red-700">
                     TOTAL EXPENSES
                   </span>

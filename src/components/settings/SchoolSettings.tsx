@@ -24,6 +24,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { SchoolConfig, ModuleName } from "@/types";
+import { BankAccountSettings } from "./BankAccountSettings";
 
 export function SchoolSettings() {
   const { config, loading, error, updateConfig, refreshConfig } = useSchool();
@@ -400,6 +401,8 @@ export function SchoolSettings() {
               </label>
             </div>
           </Card>
+
+          <BankAccountSettings config={config} onUpdate={refreshConfig} />
         </TabsContent>
       </Tabs>
     </div>

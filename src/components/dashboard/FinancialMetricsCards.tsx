@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  DollarSignIcon,
   TrendingUpIcon,
   TrendingDownIcon,
   PiggyBankIcon,
@@ -8,6 +7,7 @@ import {
   AlertTriangleIcon,
   UsersIcon,
   CalendarIcon,
+  WalletIcon,
 } from "lucide-react";
 import {
   FinancialDashboardData,
@@ -103,17 +103,15 @@ export function FinancialMetricsCards({ data }: FinancialMetricsCardsProps) {
     {
       title: "Total Revenue",
       value: formatCurrency(data.revenue.totalCollected),
-      change: 8.5,
-      changeType: "increase" as const,
-      icon: <DollarSignIcon className="h-6 w-6" />,
+      // No change percentage - would need historical data
+      icon: <WalletIcon className="h-6 w-6" />,
       description: "Collected fees and payments",
       color: "green" as const,
     },
     {
       title: "Total Expenses",
       value: formatCurrency(data.expenses.totalExpenses),
-      change: 3.2,
-      changeType: "increase" as const,
+      // No change percentage - would need historical data
       icon: <CreditCardIcon className="h-6 w-6" />,
       description: "Operating and administrative costs",
       color: "red" as const,
@@ -151,7 +149,7 @@ export function FinancialMetricsCards({ data }: FinancialMetricsCardsProps) {
       title: "Students Enrolled",
       value: formatNumber(data.students.totalStudents),
       icon: <UsersIcon className="h-6 w-6" />,
-      description: `${data.students.paidStudents} paid, ${data.students.overdueStudents} overdue`,
+      description: `${data.students.paidStudents} fully paid • ${data.students.totalStudents - data.students.paidStudents} with balance`,
       color: "purple" as const,
       alert: data.students.overdueStudents > 10,
     },

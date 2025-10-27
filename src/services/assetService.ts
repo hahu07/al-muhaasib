@@ -43,6 +43,7 @@ export class FixedAssetService extends BaseDataService<FixedAsset> {
       await autoPostingService.postAssetPurchase(
         data.assetName as string,
         assetCode,
+        data.category as string, // Asset type (category)
         data.purchasePrice as number,
         "bank_transfer", // Default to bank transfer for assets
         (data.vendor as string | undefined) || "Vendor",

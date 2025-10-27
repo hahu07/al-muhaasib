@@ -8,7 +8,8 @@ import {
   journalEntryService,
   chartOfAccountsService,
 } from "./accountingService";
-import type { JournalEntryLine } from "@/types";
+import { accountMappingService } from "./accountMappingService";
+import type { JournalEntryLine, FeeType } from "@/types";
 import { nanoid } from "nanoid";
 
 /**
@@ -27,6 +28,9 @@ export const ACCOUNT_CODES = {
   ACCOUNTS_PAYABLE: "2110", // Amounts owed to vendors
   SALARIES_PAYABLE: "2120", // Unpaid salaries
   TAX_PAYABLE: "2130", // Tax payable
+  NHF_PAYABLE: "2140", // National Housing Fund payable
+  PENSION_PAYABLE: "2150", // Pension contributions payable
+  NHIS_PAYABLE: "2160", // NHIS contributions payable
 
   // Equity
   RETAINED_EARNINGS: "3100", // Accumulated profits
@@ -44,6 +48,7 @@ export const ACCOUNT_CODES = {
   MAINTENANCE_EXPENSE: "5300", // Maintenance costs
   DEPRECIATION_EXPENSE: "5500", // Depreciation expense
   ADMINISTRATIVE_EXPENSE: "5600", // Administrative expense
+  PENSION_EXPENSE: "5700", // Employer pension contribution expense
   OTHER_EXPENSE: "5900", // Other expenses
 } as const;
 
@@ -53,9 +58,59 @@ export interface AutoPostingOptions {
   transactionDate: string;
   createdBy: string;
   autoPost?: boolean; // If true, automatically post the entry
+  statutoryDeductions?: {
+    nhf: number;
+    pensionEmployee: number;
+    pensionEmployer: number;
+    nhis: number;
+    totalEmployeeDeductions: number;
+    totalEmployerContributions: number;
+  };
 }
 
 export class AutoPostingService {
+  /**
+   * Dynamically map fee type to revenue account code using database
+   * This allows for flexible configuration through the UI
+   */
+  private async getRevenueAccountForFeeType(feeType: FeeType): Promise<string> {
+    // Try to get mapping from database
+    const mapping = await accountMappingService.getMappingForSource(
+      "revenue",
+      feeType,
+    );
+
+    if (mapping) {
+      return mapping.accountCode;
+    }
+
+    // Fallback to default accounts if mapping not found
+    console.warn(
+      `No mapping found for fee type: ${feeType}. Using fallback account.`,
+    );
+    return ACCOUNT_CODES.OTHER_INCOME;
+  }
+
+  /**
+   * Dynamically map expense category to expense account code using database
+   */
+  private async getExpenseAccountForCategory(
+    category: string,
+  ): Promise<string> {
+    // Try to get mapping from database
+    const mapping = await accountMappingService.getMappingForSource(
+      "expense",
+      category.toLowerCase(),
+    );
+
+    if (mapping) {
+      return mapping.accountCode;
+    }
+
+    // Fallback using the old hardcoded method
+    return this.getExpenseAccountCode(category);
+  }
+
   /**
    * Helper: Get account by code
    */
@@ -70,7 +125,58 @@ export class AutoPostingService {
   }
 
   /**
+   * Create journal entry for fee assignment (recognizes revenue and receivable)
+   * Debit: Accounts Receivable
+   * Credit: Revenue (by fee type)
+   */
+  async postFeeAssignment(
+    studentName: string,
+    admissionNumber: string,
+    feeAllocations: { feeType: FeeType; amount: number }[],
+    options: AutoPostingOptions,
+  ): Promise<string> {
+    const receivableAccount = await this.getAccountByCode(
+      ACCOUNT_CODES.ACCOUNTS_RECEIVABLE,
+    );
+
+    // Calculate total amount
+    const totalAmount = feeAllocations.reduce(
+      (sum, alloc) => sum + alloc.amount,
+      0,
+    );
+
+    const lines: JournalEntryLine[] = [
+      {
+        accountId: receivableAccount.id,
+        accountName: receivableAccount.accountName,
+        accountCode: receivableAccount.accountCode,
+        debit: totalAmount,
+        credit: 0,
+        description: `Fees assigned to ${studentName} (${admissionNumber})`,
+      },
+    ];
+
+    // Create credit lines by fee type allocations (recognizing revenue)
+    for (const alloc of feeAllocations) {
+      const creditCode = await this.getRevenueAccountForFeeType(alloc.feeType);
+      const creditAccount = await this.getAccountByCode(creditCode);
+      lines.push({
+        accountId: creditAccount.id,
+        accountName: creditAccount.accountName,
+        accountCode: creditAccount.accountCode,
+        debit: 0,
+        credit: alloc.amount,
+        description: `Fee assigned (${alloc.feeType}) - ${studentName}`,
+      });
+    }
+
+    return await this.createAndPostJournalEntry(lines, options);
+  }
+
+  /**
    * Create journal entry for student payment received
+   * Debit: Cash/Bank
+   * Credit: Accounts Receivable
    */
   async postStudentPayment(
     amount: number,
@@ -82,7 +188,9 @@ export class AutoPostingService {
     const debitAccountCode =
       paymentMethod === "cash" ? ACCOUNT_CODES.CASH : ACCOUNT_CODES.BANK;
     const debitAccount = await this.getAccountByCode(debitAccountCode);
-    const creditAccount = await this.getAccountByCode(ACCOUNT_CODES.FEE_INCOME);
+    const receivableAccount = await this.getAccountByCode(
+      ACCOUNT_CODES.ACCOUNTS_RECEIVABLE,
+    );
 
     const lines: JournalEntryLine[] = [
       {
@@ -94,17 +202,18 @@ export class AutoPostingService {
         description: `Payment received from ${studentName} (${admissionNumber})`,
       },
       {
-        accountId: creditAccount.id,
-        accountName: creditAccount.accountName,
-        accountCode: creditAccount.accountCode,
+        accountId: receivableAccount.id,
+        accountName: receivableAccount.accountName,
+        accountCode: receivableAccount.accountCode,
         debit: 0,
         credit: amount,
-        description: `Fee payment - ${studentName} (${admissionNumber})`,
+        description: `Payment received from ${studentName} (${admissionNumber})`,
       },
     ];
 
     return await this.createAndPostJournalEntry(lines, options);
   }
+
 
   /**
    * Create journal entry for expense payment
@@ -119,7 +228,9 @@ export class AutoPostingService {
     const creditAccountCode =
       paymentMethod === "cash" ? ACCOUNT_CODES.CASH : ACCOUNT_CODES.BANK;
     const creditAccount = await this.getAccountByCode(creditAccountCode);
-    const expenseAccountCode = this.getExpenseAccountCode(expenseCategory);
+    const expenseAccountCode = await this.getExpenseAccountForCategory(
+      expenseCategory,
+    );
     const debitAccount = await this.getAccountByCode(expenseAccountCode);
 
     const lines: JournalEntryLine[] = [
@@ -145,7 +256,7 @@ export class AutoPostingService {
   }
 
   /**
-   * Create journal entry for salary payment
+   * Create journal entry for salary payment with statutory deductions
    */
   async postSalaryPayment(
     staffName: string,
@@ -183,7 +294,64 @@ export class AutoPostingService {
       },
     ];
 
-    // Add tax payable if there are taxes
+    // Add statutory deductions as separate liability accounts
+    const statutory = options.statutoryDeductions;
+    if (statutory) {
+      // NHF Payable
+      if (statutory.nhf > 0) {
+        const nhfAccount = await this.getAccountByCode(ACCOUNT_CODES.NHF_PAYABLE);
+        lines.push({
+          accountId: nhfAccount.id,
+          accountName: nhfAccount.accountName,
+          accountCode: nhfAccount.accountCode,
+          debit: 0,
+          credit: statutory.nhf,
+          description: `NHF deduction for ${staffName}`,
+        });
+      }
+
+      // Pension Payable (Employee + Employer)
+      const totalPension = statutory.pensionEmployee + statutory.pensionEmployer;
+      if (totalPension > 0) {
+        const pensionAccount = await this.getAccountByCode(ACCOUNT_CODES.PENSION_PAYABLE);
+        lines.push({
+          accountId: pensionAccount.id,
+          accountName: pensionAccount.accountName,
+          accountCode: pensionAccount.accountCode,
+          debit: 0,
+          credit: totalPension,
+          description: `Pension contribution for ${staffName} (Employee: ₦${statutory.pensionEmployee}, Employer: ₦${statutory.pensionEmployer})`,
+        });
+      }
+
+      // Employer pension as expense (in addition to salary expense)
+      if (statutory.pensionEmployer > 0) {
+        const pensionExpenseAccount = await this.getAccountByCode(ACCOUNT_CODES.PENSION_EXPENSE);
+        lines.push({
+          accountId: pensionExpenseAccount.id,
+          accountName: pensionExpenseAccount.accountName,
+          accountCode: pensionExpenseAccount.accountCode,
+          debit: statutory.pensionEmployer,
+          credit: 0,
+          description: `Employer pension contribution for ${staffName}`,
+        });
+      }
+
+      // NHIS Payable
+      if (statutory.nhis > 0) {
+        const nhisAccount = await this.getAccountByCode(ACCOUNT_CODES.NHIS_PAYABLE);
+        lines.push({
+          accountId: nhisAccount.id,
+          accountName: nhisAccount.accountName,
+          accountCode: nhisAccount.accountCode,
+          debit: 0,
+          credit: statutory.nhis,
+          description: `NHIS contribution for ${staffName}`,
+        });
+      }
+    }
+
+    // Add tax payable (PAYE) if there are taxes
     if (taxAmount > 0) {
       const taxPayableAccount = await this.getAccountByCode(
         ACCOUNT_CODES.TAX_PAYABLE,
@@ -199,7 +367,11 @@ export class AutoPostingService {
     }
 
     // Add other deductions as salaries payable (if any difference)
-    const otherDeductions = totalDeductions - taxAmount;
+    // Calculate statutory total for comparison
+    const statutoryTotal = statutory
+      ? statutory.nhf + statutory.pensionEmployee + statutory.nhis
+      : 0;
+    const otherDeductions = totalDeductions - taxAmount - statutoryTotal;
     if (otherDeductions > 0) {
       const salariesPayableAccount = await this.getAccountByCode(
         ACCOUNT_CODES.SALARIES_PAYABLE,
@@ -218,11 +390,33 @@ export class AutoPostingService {
   }
 
   /**
-   * Create journal entry for asset purchase
+   * Dynamically map asset type to asset account code using database
+   */
+  private async getAssetAccountForType(assetType: string): Promise<string> {
+    // Try to get mapping from database
+    const mapping = await accountMappingService.getMappingForSource(
+      "asset",
+      assetType.toLowerCase(),
+    );
+
+    if (mapping) {
+      return mapping.accountCode;
+    }
+
+    // Fallback to Fixed Assets account
+    console.warn(
+      `No mapping found for asset type: ${assetType}. Using fallback Fixed Assets account.`,
+    );
+    return ACCOUNT_CODES.FIXED_ASSETS;
+  }
+
+  /**
+   * Create journal entry for asset purchase with dynamic mapping
    */
   async postAssetPurchase(
     assetName: string,
     assetCode: string,
+    assetType: string,
     purchasePrice: number,
     paymentMethod: "cash" | "bank_transfer" | "cheque",
     vendor: string,
@@ -231,15 +425,16 @@ export class AutoPostingService {
     const creditAccount = await this.getAccountByCode(
       paymentMethod === "cash" ? ACCOUNT_CODES.CASH : ACCOUNT_CODES.BANK,
     );
-    const fixedAssetsAccount = await this.getAccountByCode(
-      ACCOUNT_CODES.FIXED_ASSETS,
-    );
+    
+    // Use dynamic mapping for asset type
+    const assetAccountCode = await this.getAssetAccountForType(assetType);
+    const assetAccount = await this.getAccountByCode(assetAccountCode);
 
     const lines: JournalEntryLine[] = [
       {
-        accountId: fixedAssetsAccount.id,
-        accountName: fixedAssetsAccount.accountName,
-        accountCode: fixedAssetsAccount.accountCode,
+        accountId: assetAccount.id,
+        accountName: assetAccount.accountName,
+        accountCode: assetAccount.accountCode,
         debit: purchasePrice,
         credit: 0,
         description: `Purchase of ${assetName} (${assetCode})`,
@@ -345,22 +540,6 @@ export class AutoPostingService {
     };
 
     return categoryMap[category] || ACCOUNT_CODES.OTHER_EXPENSE;
-  }
-
-  /**
-   * Helper: Get expense account name
-   */
-  private getExpenseAccountName(category: string): string {
-    const nameMap: Record<string, string> = {
-      "Salaries & Wages": "Salary Expense",
-      Rent: "Rent Expense",
-      Utilities: "Utilities Expense",
-      "Office Supplies": "Supplies Expense",
-      Maintenance: "Maintenance Expense",
-      Administrative: "Administrative Expense",
-    };
-
-    return nameMap[category] || "Other Expense";
   }
 }
 

@@ -205,16 +205,19 @@ export default function StaffLoanModal({
 
         <div className="space-y-6">
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               onClick={() => setShowNewLoanForm(!showNewLoanForm)}
               disabled={loading}
+              size="lg"
+              className="w-full sm:w-auto"
             >
-              {showNewLoanForm ? "Cancel" : "New Loan"}
+              <DollarSign className="mr-2 h-4 w-4" />
+              {showNewLoanForm ? "Cancel" : "Create New Loan"}
             </Button>
             {selectedLoan && (
               <Button variant="outline" onClick={() => setSelectedLoan(null)}>
-                Back to List
+                ← Back to List
               </Button>
             )}
           </div>
@@ -223,9 +226,10 @@ export default function StaffLoanModal({
           {showNewLoanForm && (
             <form
               onSubmit={handleCreateLoan}
-              className="rounded-lg border bg-gray-50 p-4"
+              className="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-white p-6 shadow-md dark:border-green-800 dark:from-green-900/20 dark:to-gray-900"
             >
-              <h3 className="mb-4 font-semibold">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
                 {editingLoan ? "Edit Loan" : "Create New Loan"}
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -333,7 +337,15 @@ export default function StaffLoanModal({
           {/* Loan List or Details */}
           {!selectedLoan ? (
             <div className="space-y-4">
-              <h3 className="font-semibold">Loan History ({loans.length})</h3>
+              <div className="flex items-center gap-2 border-b pb-2">
+                <Calendar className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  Loan History
+                  <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    ({loans.length} loan{loans.length !== 1 ? 's' : ''})
+                  </span>
+                </h3>
+              </div>
               {loans.length === 0 ? (
                 <div className="py-12 text-center text-gray-500">
                   <DollarSign className="mx-auto mb-4 h-12 w-12 opacity-50" />
@@ -343,41 +355,40 @@ export default function StaffLoanModal({
                 loans.map((loan) => (
                   <div
                     key={loan.id}
-                    className="cursor-pointer rounded-lg border p-4 transition-shadow hover:shadow-md"
+                    className="cursor-pointer rounded-lg border-2 border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-green-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-green-700"
                     onClick={() => loadLoanDetails(loan)}
                   >
-                    <div className="mb-2 flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{loan.purpose}</h4>
-                        <p className="text-sm text-gray-600">
-                          {new Date(loan.startDate).toLocaleDateString()} -{" "}
-                          {loan.numberOfInstallments} months
+                    <div className="mb-3 flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100">{loan.purpose}</h4>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          {new Date(loan.startDate).toLocaleDateString()} • {loan.numberOfInstallments} months
                         </p>
                       </div>
                       <Badge
-                        className={getStatusColor(loan.status)}
+                        className={`${getStatusColor(loan.status)} border-2 px-3 py-1 text-xs font-bold uppercase`}
                         variant="secondary"
                       >
                         {loan.status}
                       </Badge>
                     </div>
-                    <div className="mt-3 grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Loan Amount</p>
-                        <p className="font-semibold">
-                          {formatCurrency(loan.amount)}
+                    <div className="mt-4 grid grid-cols-3 gap-4">
+                      <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Loan Amount</p>
+                        <p className="mt-1 text-lg font-bold text-green-600 dark:text-green-400">
+                          ₦{loan.amount.toLocaleString()}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Monthly Payment</p>
-                        <p className="font-semibold">
-                          {formatCurrency(loan.monthlyInstallment)}
+                      <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Monthly Payment</p>
+                        <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
+                          ₦{loan.monthlyInstallment.toLocaleString()}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Reference</p>
-                        <p className="text-xs font-semibold">
-                          {loan.id.substring(0, 8)}
+                      <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Reference</p>
+                        <p className="mt-1 text-sm font-mono font-semibold text-gray-700 dark:text-gray-300">
+                          {loan.id.substring(0, 8).toUpperCase()}
                         </p>
                       </div>
                     </div>
@@ -421,27 +432,27 @@ export default function StaffLoanModal({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="rounded bg-white p-3 text-center">
-                    <p className="text-sm text-gray-600">Principal</p>
-                    <p className="text-lg font-bold">
-                      {formatCurrency(selectedLoan.amount)}
+                  <div className="rounded-lg border-2 border-green-200 bg-white p-4 text-center shadow-sm dark:border-green-800 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Principal</p>
+                    <p className="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
+                      ₦{selectedLoan.amount.toLocaleString()}
                     </p>
                   </div>
-                  <div className="rounded bg-white p-3 text-center">
-                    <p className="text-sm text-gray-600">Monthly</p>
-                    <p className="text-lg font-bold">
-                      {formatCurrency(selectedLoan.monthlyInstallment)}
+                  <div className="rounded-lg border-2 border-blue-200 bg-white p-4 text-center shadow-sm dark:border-blue-800 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly</p>
+                    <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      ₦{selectedLoan.monthlyInstallment.toLocaleString()}
                     </p>
                   </div>
-                  <div className="rounded bg-white p-3 text-center">
-                    <p className="text-sm text-gray-600">Installments</p>
-                    <p className="text-lg font-bold">
+                  <div className="rounded-lg border-2 border-purple-200 bg-white p-4 text-center shadow-sm dark:border-purple-800 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Installments</p>
+                    <p className="mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400">
                       {selectedLoan.numberOfInstallments}
                     </p>
                   </div>
-                  <div className="rounded bg-white p-3 text-center">
-                    <p className="text-sm text-gray-600">Repaid</p>
-                    <p className="text-lg font-bold">{repayments.length}</p>
+                  <div className="rounded-lg border-2 border-orange-200 bg-white p-4 text-center shadow-sm dark:border-orange-800 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Repaid</p>
+                    <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">{repayments.length}</p>
                   </div>
                 </div>
               </div>

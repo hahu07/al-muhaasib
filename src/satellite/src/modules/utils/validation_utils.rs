@@ -188,7 +188,8 @@ pub fn is_valid_payment_reference(reference: &str) -> bool {
 
 pub fn is_valid_salary_reference(reference: &str) -> bool {
     // Format: SAL-YYYY-MM-XXXXXX (SAL- + 4-digit year + - + 2-digit month + - + 6 alphanumeric)
-    if reference.len() != 16 { return false; }
+    // Total: 3 + 1 + 4 + 1 + 2 + 1 + 6 = 18 characters
+    if reference.len() != 18 { return false; }
     
     let parts: Vec<&str> = reference.split('-').collect();
     if parts.len() != 4 { return false; }

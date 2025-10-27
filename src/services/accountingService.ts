@@ -165,7 +165,25 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
         accountCode: "2130",
         accountName: "Tax Payable",
         accountType: "liability" as const,
-        description: "Tax payable",
+        description: "Tax payable (PAYE)",
+      },
+      {
+        accountCode: "2140",
+        accountName: "NHF Payable",
+        accountType: "liability" as const,
+        description: "National Housing Fund contributions payable",
+      },
+      {
+        accountCode: "2150",
+        accountName: "Pension Payable",
+        accountType: "liability" as const,
+        description: "Pension contributions payable (Employee + Employer)",
+      },
+      {
+        accountCode: "2160",
+        accountName: "NHIS Payable",
+        accountType: "liability" as const,
+        description: "National Health Insurance Scheme contributions payable",
       },
 
       // Equity
@@ -250,6 +268,12 @@ export class ChartOfAccountsService extends BaseDataService<ChartOfAccounts> {
         accountName: "Administrative Expense",
         accountType: "expense" as const,
         description: "Administrative expenses",
+      },
+      {
+        accountCode: "5700",
+        accountName: "Pension Expense",
+        accountType: "expense" as const,
+        description: "Employer pension contributions",
       },
       {
         accountCode: "5900",
