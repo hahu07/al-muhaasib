@@ -145,7 +145,15 @@ export const StudentRegistrationForm: React.FC<
       // Update class enrollment
       await classService.updateEnrollment(formData.classId, 1);
 
-      // Try to automatically assign fee structure for the current academic year and first term
+      // NOTE: Automatic fee assignment is disabled to give administrators full control.
+      // Fees should be assigned manually via the Fee Assignment page where you can:
+      // - Select which students to assign
+      // - Choose optional fees per student (e.g., feeding, transport)
+      // - Apply scholarships
+      // - Set due dates
+      // 
+      // To enable automatic assignment, uncomment the code below:
+      /*
       try {
         const currentYear = new Date().getFullYear();
         const academicYear = `${currentYear}/${currentYear + 1}`;
@@ -172,15 +180,11 @@ export const StudentRegistrationForm: React.FC<
           console.log(
             `Automatically assigned fee structure to ${student.firstname} ${student.surname}`,
           );
-        } else {
-          console.log(
-            `No fee structure found for ${selectedClass.name} - ${academicYear} ${term} term`,
-          );
         }
       } catch (feeError) {
         console.error("Error auto-assigning fee structure:", feeError);
-        // Don't fail the student registration if fee assignment fails
       }
+      */
 
       onSuccess?.(student.id);
     } catch (error) {

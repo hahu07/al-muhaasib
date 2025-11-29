@@ -34,6 +34,7 @@ import {
   Database,
   FileText,
   Banknote,
+  Wrench,
 } from "lucide-react";
 
 interface NavItem {
@@ -204,6 +205,12 @@ export default function DashboardLayout({
       permission: "settings.view",
     });
 
+    mainNav.push({
+      title: "Development Tools",
+      href: "/dashboard/dev",
+      icon: <Wrench className="h-5 w-5" />,
+    });
+
     return mainNav;
   };
 
@@ -301,6 +308,11 @@ export default function DashboardLayout({
                 </Link>
               );
             })}
+            
+            {/* Role Switcher for Development */}
+            <div className="pt-2">
+              <RoleSwitcher variant="sidebar" />
+            </div>
           </nav>
 
           {/* User Profile */}
@@ -319,6 +331,7 @@ export default function DashboardLayout({
                 </p>
               </div>
             </div>
+            
             <button
               onClick={signOut}
               className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -365,9 +378,6 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <main className="min-h-screen pt-16 lg:ml-64 lg:pt-0">{children}</main>
-
-      {/* Development Role Switcher */}
-      <RoleSwitcher />
     </div>
     // </SetupGuard>
   );

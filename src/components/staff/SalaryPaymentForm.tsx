@@ -46,6 +46,7 @@ import {
   type StaffBonus,
   type StaffPenalty,
 } from "@/services/staffFinancialService";
+import { useSchool } from "@/contexts/SchoolContext";
 
 interface SalaryPaymentFormProps {
   staffId?: string;
@@ -71,6 +72,7 @@ export default function SalaryPaymentForm({
   onCancel,
 }: SalaryPaymentFormProps) {
   const { toast } = useToast();
+  const { config } = useSchool();
   const [loading, setLoading] = useState(false);
   const [staffLoading, setStaffLoading] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
@@ -127,6 +129,18 @@ export default function SalaryPaymentForm({
       loadFinancialItems(formData.staffId, formData.month, formData.year);
     }
   }, [formData.month, formData.year]);
+
+  // Validate payment method against enabled methods
+  useEffect(() => {
+    if (config?.defaultPaymentMethods && config.defaultPaymentMethods.length > 0) {
+      const isMethodEnabled = config.defaultPaymentMethods.includes(formData.paymentMethod as any);
+      
+      if (!isMethodEnabled) {
+        console.log('[SalaryPaymentForm] Current method not enabled, switching to:', config.defaultPaymentMethods[0]);
+        handleInputChange('paymentMethod', config.defaultPaymentMethods[0]);
+      }
+    }
+  }, [config?.defaultPaymentMethods, formData.paymentMethod]);
 
   const loadStaff = async () => {
     try {
@@ -1235,11 +1249,19 @@ export default function SalaryPaymentForm({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="bank_transfer">
-                            Bank Transfer
-                          </SelectItem>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="cheque">Cheque</SelectItem>
+                          {config?.defaultPaymentMethods && config.defaultPaymentMethods.length > 0 ? (
+                            config.defaultPaymentMethods.map((method) => (
+                              <SelectItem key={method} value={method}>
+                                {method === "bank_transfer" ? "Bank Transfer" : method === "pos" ? "POS" : method === "online" ? "Online Payment" : method.charAt(0).toUpperCase() + method.slice(1)}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="cheque">Cheque</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                       {errors.paymentMethod && (

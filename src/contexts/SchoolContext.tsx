@@ -53,6 +53,12 @@ export function SchoolProvider({ children }: SchoolProviderProps) {
       setError(null);
 
       const schoolConfig = await schoolConfigService.getConfig();
+      
+      console.log('[SchoolContext] Loaded config:', {
+        hasConfig: !!schoolConfig,
+        defaultPaymentMethods: schoolConfig?.defaultPaymentMethods,
+        enabledModules: schoolConfig?.enabledModules
+      });
 
       // If no config exists, create default config
       if (!schoolConfig && user) {
@@ -62,6 +68,9 @@ export function SchoolProvider({ children }: SchoolProviderProps) {
           satelliteId,
           user.key,
         );
+        console.log('[SchoolContext] Created default config:', {
+          defaultPaymentMethods: defaultConfig.defaultPaymentMethods
+        });
         setConfig(defaultConfig);
       } else {
         setConfig(schoolConfig);

@@ -40,7 +40,11 @@ const roles: { value: UserRole; label: string; color: string }[] = [
   },
 ];
 
-export function RoleSwitcher() {
+interface RoleSwitcherProps {
+  variant?: "floating" | "sidebar";
+}
+
+export function RoleSwitcher({ variant = "floating" }: RoleSwitcherProps) {
   const { appUser } = useAuth();
   const [switching, setSwitching] = useState(false);
 
@@ -65,20 +69,35 @@ export function RoleSwitcher() {
 
   const currentRole = roles.find((r) => r.value === appUser.role);
 
+  const trigger = variant === "sidebar" ? (
+    <Button
+      variant="outline"
+      className="w-full border-orange-400 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400"
+      disabled={switching}
+      size="sm"
+    >
+      <Shield className="mr-2 h-4 w-4" />
+      <span className="flex-1 text-left text-xs">Testing as: {currentRole?.label}</span>
+      {switching && <RefreshCw className="ml-2 h-3 w-3 animate-spin" />}
+    </Button>
+  ) : (
+    <Button
+      variant="outline"
+      className="border-2 border-orange-400 bg-white shadow-lg dark:bg-gray-800"
+      disabled={switching}
+    >
+      <Shield className="mr-2 h-4 w-4" />
+      <span className="mr-2 hidden sm:inline">Testing as:</span>
+      <Badge className={currentRole?.color}>{currentRole?.label}</Badge>
+      {switching && <RefreshCw className="ml-2 h-3 w-3 animate-spin" />}
+    </Button>
+  );
+
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className={variant === "floating" ? "fixed bottom-4 right-4 z-50" : "w-full"}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="border-2 border-orange-400 bg-white shadow-lg dark:bg-gray-800"
-            disabled={switching}
-          >
-            <Shield className="mr-2 h-4 w-4" />
-            <span className="mr-2 hidden sm:inline">Testing as:</span>
-            <Badge className={currentRole?.color}>{currentRole?.label}</Badge>
-            {switching && <RefreshCw className="ml-2 h-3 w-3 animate-spin" />}
-          </Button>
+          {trigger}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>

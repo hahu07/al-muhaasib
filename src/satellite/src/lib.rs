@@ -12,6 +12,7 @@ use junobuild_satellite::{
 pub mod modules {
     pub mod banking;
     pub mod expenses;
+    pub mod fees;
     pub mod payments;
     pub mod staff;
     pub mod students;
@@ -21,6 +22,7 @@ pub mod modules {
 use modules::{
     banking::{validate_bank_transaction, validate_transfer, validate_bank_account},
     expenses::{validate_expense_document, validate_expense_category_document},
+    fees::{validate_student_fee_assignment, validate_scholarship},
     payments::validate_payment_document,
     staff::{validate_staff_document, validate_salary_payment_document},
     students::validate_student_document,
@@ -36,7 +38,9 @@ use modules::{
     "students", 
     "payments", 
     "fee_categories", 
-    "fee_assignments",
+    "student_fee_assignments",
+    "scholarships",
+    "scholarship_applications",
     "staff",
     "salary_payments",
     "classes"
@@ -54,13 +58,16 @@ fn assert_set_doc(context: AssertSetDocContext) -> Result<(), String> {
         "students" => validate_student_document(&context),
         // Payments Module
         "payments" => validate_payment_document(&context),
+        // Fee & Scholarship Module
+        "student_fee_assignments" => validate_student_fee_assignment(&context),
+        "scholarships" => validate_scholarship(&context),
         // Staff & Payroll Module
         "staff" => validate_staff_document(&context),
         "salary_payments" => validate_salary_payment_document(&context),
         // TODO: Implement remaining validations
         "budgets" => Ok(()),
         "fee_categories" => Ok(()),
-        "fee_assignments" => Ok(()),
+        "scholarship_applications" => Ok(()),
         "classes" => Ok(()),
         _ => Ok(()), // Allow unknown collections for now
     }

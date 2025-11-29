@@ -20,6 +20,8 @@ export const COLLECTIONS = {
   FEE_STRUCTURES: "fee_structures",
   STUDENT_FEE_ASSIGNMENTS: "student_fee_assignments",
   PAYMENTS: "payments",
+  SCHOLARSHIPS: "scholarships",
+  SCHOLARSHIP_APPLICATIONS: "scholarship_applications",
 
   // Expense Management
   EXPENSE_CATEGORIES: "expense_categories",

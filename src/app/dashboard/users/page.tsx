@@ -37,6 +37,9 @@ import {
   XCircle,
   AlertTriangle,
   Search,
+  Trash2,
+  Plus,
+  X,
 } from "lucide-react";
 import { userService } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,9 +56,13 @@ export default function UserManagementPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedPermissionsToAdd, setSelectedPermissionsToAdd] = useState<
+    string[]
+  >([]);
 
   // Form state
   const [editForm, setEditForm] = useState({
@@ -162,6 +169,62 @@ export default function UserManagementPage() {
       console.error("Failed to reset permissions:", err);
       setError("Failed to reset permissions");
     }
+  };
+
+  const handleAddPermissions = async (userId: string, permissions: string[]) => {
+    try {
+      await userService.addPermissions(userId, permissions);
+      setSuccess(`Added ${permissions.length} permission(s)`);
+      await loadUsers();
+      setSelectedPermissionsToAdd([]);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error("Failed to add permissions:", err);
+      setError("Failed to add permissions");
+    }
+  };
+
+  const handleRemovePermission = async (userId: string, permission: string) => {
+    try {
+      await userService.removePermissions(userId, [permission]);
+      setSuccess(`Removed permission: ${permission}`);
+      await loadUsers();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error("Failed to remove permission:", err);
+      setError("Failed to remove permission");
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      await userService.delete(selectedUser.id);
+      setSuccess(
+        `User ${selectedUser.firstname} ${selectedUser.surname} deleted successfully`,
+      );
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+      await loadUsers();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getAvailablePermissions = (): string[] => {
+    if (!selectedUser) return [];
+    // Get all possible permissions from PERMISSIONS object
+    const allPermissions = Object.values(PERMISSIONS);
+    // Filter out permissions the user already has
+    return allPermissions.filter(
+      (p) => !selectedUser.permissions.includes(p),
+    );
   };
 
   const filteredUsers = users.filter((user) => {
@@ -376,6 +439,20 @@ export default function UserManagementPage() {
                             )}
                           </Button>
                         </PermissionGuard>
+                        <PermissionGuard permission={PERMISSIONS.USERS_DELETE}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            disabled={user.id === appUser?.id}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGuard>
                       </div>
                     </td>
                   </tr>
@@ -508,9 +585,9 @@ export default function UserManagementPage() {
         open={isPermissionDialogOpen}
         onOpenChange={setIsPermissionDialogOpen}
       >
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>User Permissions</DialogTitle>
+            <DialogTitle>Manage Permissions</DialogTitle>
             <DialogDescription>
               {selectedUser &&
                 `${selectedUser.firstname} ${selectedUser.surname} - ${getRoleLabel(selectedUser.role)}`}
@@ -519,7 +596,7 @@ export default function UserManagementPage() {
           {selectedUser && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {selectedUser.permissions.length} permissions assigned
                 </p>
                 <PermissionGuard permission={PERMISSIONS.USERS_MANAGE_ROLES}>
@@ -532,22 +609,166 @@ export default function UserManagementPage() {
                   </Button>
                 </PermissionGuard>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {selectedUser.permissions.map((permission) => (
-                  <Badge
-                    key={permission}
-                    variant="secondary"
-                    className="justify-center"
-                  >
-                    {permission}
-                  </Badge>
-                ))}
+
+              {/* Add Permissions Section */}
+              <PermissionGuard permission={PERMISSIONS.USERS_MANAGE_ROLES}>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                  <h4 className="mb-2 font-semibold text-blue-900 dark:text-blue-100">
+                    Add Permissions
+                  </h4>
+                  <div className="space-y-2">
+                    <Select
+                      value=""
+                      onValueChange={(permission) => {
+                        if (
+                          permission &&
+                          !selectedPermissionsToAdd.includes(permission)
+                        ) {
+                          setSelectedPermissionsToAdd([
+                            ...selectedPermissionsToAdd,
+                            permission,
+                          ]);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select permission to add" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailablePermissions().map((permission) => (
+                          <SelectItem key={permission} value={permission}>
+                            {permission}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedPermissionsToAdd.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {selectedPermissionsToAdd.map((permission) => (
+                            <Badge
+                              key={permission}
+                              variant="secondary"
+                              className="gap-1"
+                            >
+                              {permission}
+                              <button
+                                onClick={() =>
+                                  setSelectedPermissionsToAdd(
+                                    selectedPermissionsToAdd.filter(
+                                      (p) => p !== permission,
+                                    ),
+                                  )
+                                }
+                                className="ml-1 hover:text-red-600"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <Button
+                          onClick={() =>
+                            handleAddPermissions(
+                              selectedUser.id,
+                              selectedPermissionsToAdd,
+                            )
+                          }
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Plus className="mr-1 h-4 w-4" />
+                          Add {selectedPermissionsToAdd.length} Permission(s)
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </PermissionGuard>
+
+              {/* Current Permissions List */}
+              <div>
+                <h4 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">
+                  Current Permissions
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                  {selectedUser.permissions.map((permission) => (
+                    <div
+                      key={permission}
+                      className="flex items-center justify-between rounded-lg border-2 border-gray-400 bg-white p-3 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                    >
+                      <span className="text-base font-semibold text-gray-900 dark:text-white">{permission}</span>
+                      <PermissionGuard
+                        permission={PERMISSIONS.USERS_MANAGE_ROLES}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleRemovePermission(selectedUser.id, permission)
+                          }
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </PermissionGuard>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setIsPermissionDialogOpen(false)}>
+            <Button
+              onClick={() => {
+                setIsPermissionDialogOpen(false);
+                setSelectedPermissionsToAdd([]);
+              }}
+            >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this user? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                You are about to permanently delete:
+                <div className="mt-2 font-semibold">
+                  {selectedUser.firstname} {selectedUser.surname} ({getRoleLabel(selectedUser.role)})
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedUser(null);
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={saving}
+            >
+              {saving ? "Deleting..." : "Delete User"}
             </Button>
           </DialogFooter>
         </DialogContent>

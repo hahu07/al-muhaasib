@@ -324,22 +324,99 @@ export class StudentFeeAssignmentService extends BaseDataService<StudentFeeAssig
     term: StudentFeeAssignment["term"],
     feeItems: FeeItem[],
     dueDate?: string,
+    options?: {
+      scholarshipId?: string;
+      selectedOptionalFees?: string[]; // categoryIds of optional fees student opted into
+    },
   ): Promise<StudentFeeAssignment> {
-    // Convert FeeItem to StudentFeeItem
-    const studentFeeItems: StudentFeeItem[] = feeItems.map((item) => ({
-      categoryId: item.categoryId,
-      categoryName: item.categoryName,
-      type: item.type,
-      amount: item.amount,
-      amountPaid: 0,
-      balance: item.amount,
-      isMandatory: item.isMandatory,
-    }));
+    // Convert FeeItem to StudentFeeItem with optional fee handling
+    const studentFeeItems: StudentFeeItem[] = feeItems
+      .filter((item) => {
+        // Include mandatory fees
+        if (item.isMandatory) return true;
+        // Include optional fees only if selected
+        if (item.isOptional) {
+          return options?.selectedOptionalFees?.includes(item.categoryId) || false;
+        }
+        return true;
+      })
+      .map((item) => ({
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        type: item.type,
+        amount: item.amount,
+        amountPaid: 0,
+        balance: item.amount,
+        isMandatory: item.isMandatory,
+        isOptional: item.isOptional,
+        isSelected: item.isOptional ? true : undefined,
+      }));
 
-    const totalAmount = studentFeeItems.reduce(
+    const originalAmount = studentFeeItems.reduce(
       (sum, item) => sum + item.amount,
       0,
     );
+
+    // Apply scholarship if provided
+    let scholarshipData: {
+      scholarshipId?: string;
+      scholarshipName?: string;
+      scholarshipType?: "percentage" | "fixed_amount" | "waiver";
+      scholarshipValue?: number;
+      discountAmount?: number;
+    } = {};
+
+    let totalAmount = originalAmount;
+
+    if (options?.scholarshipId) {
+      try {
+        const { scholarshipService } = await import("./scholarshipService");
+        const scholarship = await scholarshipService.getById(
+          options.scholarshipId,
+        );
+
+        if (scholarship) {
+          const totalDiscount = scholarshipService.calculateDiscount(
+            scholarship,
+            originalAmount,
+          );
+
+          scholarshipData = {
+            scholarshipId: scholarship.id,
+            scholarshipName: scholarship.name,
+            scholarshipType:
+              scholarship.type === "full_waiver"
+                ? "waiver"
+                : scholarship.type,
+            scholarshipValue:
+              scholarship.type === "percentage"
+                ? scholarship.percentageOff
+                : scholarship.fixedAmountOff,
+            discountAmount: totalDiscount,
+          };
+
+          totalAmount = originalAmount - totalDiscount;
+
+          // Update fee items with proportional discount
+          studentFeeItems.forEach((item) => {
+            const itemDiscount = scholarshipService.calculateDiscount(
+              scholarship,
+              item.amount,
+              item.type,
+            );
+            if (itemDiscount > 0) {
+              item.balance = item.amount - itemDiscount;
+            }
+          });
+
+          // Increment scholarship beneficiary count
+          await scholarshipService.incrementBeneficiaries(scholarship.id);
+        }
+      } catch (error) {
+        console.error("Error applying scholarship:", error);
+        // Continue without scholarship if there's an error
+      }
+    }
 
     // Create the assignment
     const assignment = await this.create({
@@ -351,11 +428,13 @@ export class StudentFeeAssignmentService extends BaseDataService<StudentFeeAssig
       academicYear,
       term,
       feeItems: studentFeeItems,
+      originalAmount,
       totalAmount,
       amountPaid: 0,
       balance: totalAmount,
       status: "unpaid",
       dueDate,
+      ...scholarshipData,
     });
 
     // Auto-post journal entry for fee assignment (recognizes revenue and receivable)

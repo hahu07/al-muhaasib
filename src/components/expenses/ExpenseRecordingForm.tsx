@@ -20,6 +20,7 @@ import {
   budgetService,
 } from "@/services";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchool } from "@/contexts/SchoolContext";
 import type { ExpenseCategoryDef, ExpenseCategory } from "@/types";
 import {
   DollarSignIcon,
@@ -41,6 +42,7 @@ export const ExpenseRecordingForm: React.FC<ExpenseRecordingFormProps> = ({
   className = "",
 }) => {
   const { appUser } = useAuth();
+  const { config } = useSchool();
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [categories, setCategories] = useState<ExpenseCategoryDef[]>([]);
@@ -287,12 +289,39 @@ export const ExpenseRecordingForm: React.FC<ExpenseRecordingFormProps> = ({
     setCategoryFormErrors({});
   };
 
-  const paymentMethods = [
+  const allPaymentMethods = [
     { value: "cash", label: "Cash" },
     { value: "bank_transfer", label: "Bank Transfer" },
     { value: "cheque", label: "Cheque" },
     { value: "pos", label: "POS" },
+    { value: "online", label: "Online Payment" },
   ];
+
+  // Filter payment methods based on school config
+  const paymentMethods = React.useMemo(() => {
+    if (!config?.defaultPaymentMethods || config.defaultPaymentMethods.length === 0) {
+      console.log('[ExpenseForm] No payment methods configured, showing all');
+      return allPaymentMethods;
+    }
+    
+    console.log('[ExpenseForm] Enabled payment methods:', config.defaultPaymentMethods);
+    const filtered = allPaymentMethods.filter(method => 
+      config.defaultPaymentMethods.includes(method.value as any)
+    );
+    console.log('[ExpenseForm] Filtered methods:', filtered.map(m => m.value));
+    return filtered;
+  }, [config?.defaultPaymentMethods]);
+
+  // Update payment method if current value is not in enabled methods
+  useEffect(() => {
+    const currentMethod = watch('paymentMethod');
+    const isCurrentMethodEnabled = paymentMethods.some(m => m.value === currentMethod);
+    
+    if (!isCurrentMethodEnabled && paymentMethods.length > 0) {
+      console.log('[ExpenseForm] Current method not enabled, switching to:', paymentMethods[0].value);
+      setValue('paymentMethod', paymentMethods[0].value as any);
+    }
+  }, [paymentMethods, watch, setValue]);
 
   // Get predefined categories from service
   const expenseCategoryOptions = expenseCategoryService

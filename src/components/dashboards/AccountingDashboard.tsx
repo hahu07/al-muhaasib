@@ -16,6 +16,8 @@ import {
   UserCheckIcon,
   PackageIcon,
   FileBarChartIcon,
+  Lock,
+  AwardIcon,
 } from "lucide-react";
 import {
   useFinancialDashboard,
@@ -29,6 +31,7 @@ import type { Payment, StudentProfile } from "@/types";
 import StaffRouter from "@/components/staff/StaffRouter";
 import AssetManagement from "@/components/assets/AssetManagement";
 import ReportsDashboard from "@/components/reports/ReportsDashboard";
+import { useSchool } from "@/contexts/SchoolContext";
 
 // Export utilities
 function generateCSV(data: Record<string, unknown>[], filename: string) {
@@ -183,6 +186,7 @@ function useRealtimeDashboardData() {
 
 export function AccountingDashboard() {
   const router = useRouter();
+  const { isModuleEnabled } = useSchool();
   const [activeTab, setActiveTab] = useState<
     | "overview"
     | "students"
@@ -190,6 +194,7 @@ export function AccountingDashboard() {
     | "expenses"
     | "staff"
     | "assets"
+    | "scholarships"
     | "reports"
   >("overview");
   const { data, loading, error } = useFinancialDashboard();
@@ -253,38 +258,53 @@ export function AccountingDashboard() {
                 id: "overview",
                 label: "Overview",
                 icon: <TrendingUpIcon className="h-4 w-4" />,
+                module: null,
               },
               {
                 id: "students",
                 label: "Students",
                 icon: <UsersIcon className="h-4 w-4" />,
+                module: "students" as const,
               },
               {
                 id: "transactions",
                 label: "Payments",
                 icon: <CreditCardIcon className="h-4 w-4" />,
+                module: "payments" as const,
               },
               {
                 id: "expenses",
                 label: "Expenses",
                 icon: <DollarSignIcon className="h-4 w-4" />,
+                module: "expenses" as const,
               },
               {
                 id: "staff",
                 label: "Staff",
                 icon: <UserCheckIcon className="h-4 w-4" />,
+                module: "staff" as const,
               },
               {
                 id: "assets",
                 label: "Assets",
                 icon: <PackageIcon className="h-4 w-4" />,
+                module: "assets" as const,
+              },
+              {
+                id: "scholarships",
+                label: "Scholarships",
+                icon: <AwardIcon className="h-4 w-4" />,
+                module: "fees" as const,
               },
               {
                 id: "reports",
                 label: "Reports",
                 icon: <FileBarChartIcon className="h-4 w-4" />,
+                module: "reports" as const,
               },
-            ].map((tab) => (
+            ]
+              .filter((tab) => !tab.module || isModuleEnabled(tab.module))
+              .map((tab) => (
               <button
                 key={tab.id}
                 onClick={() =>
@@ -296,6 +316,7 @@ export function AccountingDashboard() {
                       | "expenses"
                       | "staff"
                       | "assets"
+                      | "scholarships"
                       | "reports",
                   )
                 }
@@ -323,25 +344,57 @@ export function AccountingDashboard() {
             onExport={handleExportReport}
           />
         )}
-        {activeTab === "students" && (
-          <StudentsTab
-            data={data}
-            recentStudents={recentStudents}
-            realtimeLoading={realtimeLoading}
-          />
-        )}
-        {activeTab === "transactions" && (
-          <TransactionsTab
-            data={data}
-            recentPayments={recentPayments}
-            realtimeLoading={realtimeLoading}
-            onExport={handleExportReport}
-          />
-        )}
-        {activeTab === "expenses" && <ExpensesTab />}
-        {activeTab === "staff" && <StaffRouter />}
-        {activeTab === "assets" && <AssetManagement />}
-        {activeTab === "reports" && <ReportsDashboard />}
+        {activeTab === "students" &&
+          (isModuleEnabled("students") ? (
+            <StudentsTab
+              data={data}
+              recentStudents={recentStudents}
+              realtimeLoading={realtimeLoading}
+            />
+          ) : (
+            <ModuleDisabledMessage moduleName="Students" />
+          ))}
+        {activeTab === "transactions" &&
+          (isModuleEnabled("payments") ? (
+            <TransactionsTab
+              data={data}
+              recentPayments={recentPayments}
+              realtimeLoading={realtimeLoading}
+              onExport={handleExportReport}
+            />
+          ) : (
+            <ModuleDisabledMessage moduleName="Payments" />
+          ))}
+        {activeTab === "expenses" &&
+          (isModuleEnabled("expenses") ? (
+            <ExpensesTab />
+          ) : (
+            <ModuleDisabledMessage moduleName="Expenses" />
+          ))}
+        {activeTab === "staff" &&
+          (isModuleEnabled("staff") ? (
+            <StaffRouter />
+          ) : (
+            <ModuleDisabledMessage moduleName="Staff & Payroll" />
+          ))}
+        {activeTab === "assets" &&
+          (isModuleEnabled("assets") ? (
+            <AssetManagement />
+          ) : (
+            <ModuleDisabledMessage moduleName="Assets" />
+          ))}
+        {activeTab === "scholarships" &&
+          (isModuleEnabled("fees") ? (
+            <ScholarshipsTab />
+          ) : (
+            <ModuleDisabledMessage moduleName="Scholarships" />
+          ))}
+        {activeTab === "reports" &&
+          (isModuleEnabled("reports") ? (
+            <ReportsDashboard />
+          ) : (
+            <ModuleDisabledMessage moduleName="Reports" />
+          ))}
       </div>
 
       {/* Export Modal */}
@@ -377,6 +430,7 @@ function OverviewTab({
   onExport?: () => void;
 }) {
   const router = useRouter();
+  const { isModuleEnabled } = useSchool();
 
   const formatTimeAgo = (date: Date | string | bigint | number) => {
     const toDate = (d: Date | string | bigint | number) => {
@@ -435,41 +489,55 @@ function OverviewTab({
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-800">
         <h2 className="mb-4 text-lg font-semibold">Quick Actions</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-          <ActionButton
-            icon={<PlusIcon className="h-5 w-5" />}
-            label="Record Payment"
-            onClick={() => router.push("/students")}
-          />
-          <ActionButton
-            icon={<UsersIcon className="h-5 w-5" />}
-            label="Add Student"
-            onClick={() => router.push("/students")}
-          />
-          <ActionButton
-            icon={<BookOpenIcon className="h-5 w-5" />}
-            label="Fee Management"
-            onClick={() => router.push("/fees")}
-          />
-          <ActionButton
-            icon={<FileTextIcon className="h-5 w-5" />}
-            label="Record Expense"
-            onClick={() => router.push("/expenses")}
-          />
-          <ActionButton
-            icon={<UserCheckIcon className="h-5 w-5" />}
-            label="Staff Management"
-            onClick={() => router.push("/staff")}
-          />
-          <ActionButton
-            icon={<PackageIcon className="h-5 w-5" />}
-            label="Asset Management"
-            onClick={() => router.push("/assets")}
-          />
-          <ActionButton
-            icon={<FileBarChartIcon className="h-5 w-5" />}
-            label="Financial Reports"
-            onClick={() => router.push("/reports")}
-          />
+          {isModuleEnabled("payments") && (
+            <ActionButton
+              icon={<PlusIcon className="h-5 w-5" />}
+              label="Record Payment"
+              onClick={() => router.push("/students")}
+            />
+          )}
+          {isModuleEnabled("students") && (
+            <ActionButton
+              icon={<UsersIcon className="h-5 w-5" />}
+              label="Add Student"
+              onClick={() => router.push("/students")}
+            />
+          )}
+          {isModuleEnabled("fees") && (
+            <ActionButton
+              icon={<BookOpenIcon className="h-5 w-5" />}
+              label="Fee Management"
+              onClick={() => router.push("/fees")}
+            />
+          )}
+          {isModuleEnabled("expenses") && (
+            <ActionButton
+              icon={<FileTextIcon className="h-5 w-5" />}
+              label="Record Expense"
+              onClick={() => router.push("/expenses")}
+            />
+          )}
+          {isModuleEnabled("staff") && (
+            <ActionButton
+              icon={<UserCheckIcon className="h-5 w-5" />}
+              label="Staff Management"
+              onClick={() => router.push("/staff")}
+            />
+          )}
+          {isModuleEnabled("assets") && (
+            <ActionButton
+              icon={<PackageIcon className="h-5 w-5" />}
+              label="Asset Management"
+              onClick={() => router.push("/assets")}
+            />
+          )}
+          {isModuleEnabled("reports") && (
+            <ActionButton
+              icon={<FileBarChartIcon className="h-5 w-5" />}
+              label="Financial Reports"
+              onClick={() => router.push("/reports")}
+            />
+          )}
           <ActionButton
             icon={<DownloadIcon className="h-5 w-5" />}
             label="Export Report"
@@ -1264,6 +1332,58 @@ function TransactionListItem() {
   );
 }
 
+// Scholarships Tab Component
+function ScholarshipsTab() {
+  const router = useRouter();
+
+  return (
+    <div className="space-y-6">
+      {/* Quick Actions for Scholarships */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h2 className="mb-4 text-lg font-semibold">Scholarship Management</h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <ActionButton
+            icon={<PlusIcon className="h-5 w-5" />}
+            label="Create Scholarship"
+            onClick={() => router.push("/scholarships")}
+          />
+          <ActionButton
+            icon={<AwardIcon className="h-5 w-5" />}
+            label="View Scholarships"
+            onClick={() => router.push("/scholarships")}
+          />
+          <ActionButton
+            icon={<UsersIcon className="h-5 w-5" />}
+            label="Manage Beneficiaries"
+            onClick={() => router.push("/scholarships")}
+          />
+        </div>
+      </div>
+
+      {/* Scholarships Overview */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Scholarship Overview</h2>
+        </div>
+        <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+          <AwardIcon className="mx-auto mb-4 h-12 w-12 opacity-30" />
+          <p className="mb-2 text-lg font-medium">Scholarship & Financial Aid</p>
+          <p className="mb-4 text-sm">
+            Create and manage scholarships, discounts, and fee waivers
+          </p>
+          <button
+            onClick={() => router.push("/scholarships")}
+            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Go to Scholarships
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Expenses Tab Component
 function ExpensesTab() {
   const router = useRouter();
@@ -1350,6 +1470,32 @@ function EmptyState() {
       <div className="text-center">
         <p className="mb-4 text-gray-500">No data available</p>
         <Button onClick={() => window.location.reload()}>Refresh</Button>
+      </div>
+    </div>
+  );
+}
+
+function ModuleDisabledMessage({ moduleName }: { moduleName: string }) {
+  const router = useRouter();
+  return (
+    <div className="rounded-lg border border-orange-200 bg-orange-50 p-6 dark:border-orange-800 dark:bg-orange-900/20">
+      <div className="flex flex-col items-center justify-center space-y-4 py-12 text-center">
+        <Lock className="h-16 w-16 text-orange-500" />
+        <div>
+          <h3 className="text-xl font-semibold text-orange-900 dark:text-orange-300">
+            {moduleName} Module Disabled
+          </h3>
+          <p className="mt-2 text-sm text-orange-800 dark:text-orange-400">
+            This module has been disabled in your school settings. Enable it to
+            access {moduleName.toLowerCase()} features.
+          </p>
+        </div>
+        <Button
+          onClick={() => router.push("/dashboard/settings?tab=modules")}
+          className="bg-orange-600 hover:bg-orange-700"
+        >
+          Go to Settings
+        </Button>
       </div>
     </div>
   );

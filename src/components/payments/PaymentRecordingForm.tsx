@@ -40,7 +40,7 @@ export const PaymentRecordingForm: React.FC<PaymentRecordingFormProps> = ({
   onCancel,
 }) => {
   const { user, appUser, loading: authLoading } = useAuth();
-  const { formatCurrency } = useSchool();
+  const { formatCurrency, config } = useSchool();
   const [loading, setLoading] = useState(false);
   const [loadingAssignments, setLoadingAssignments] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -106,13 +106,39 @@ export const PaymentRecordingForm: React.FC<PaymentRecordingFormProps> = ({
     }
   };
 
-  const paymentMethods = [
+  const allPaymentMethods = [
     { value: "cash", label: "Cash" },
     { value: "bank_transfer", label: "Bank Transfer" },
     { value: "pos", label: "POS" },
     { value: "online", label: "Online Payment" },
     { value: "cheque", label: "Cheque" },
   ];
+
+  // Filter payment methods based on school config
+  const paymentMethods = React.useMemo(() => {
+    if (!config?.defaultPaymentMethods || config.defaultPaymentMethods.length === 0) {
+      console.log('[PaymentForm] No payment methods configured, showing all');
+      return allPaymentMethods;
+    }
+    
+    console.log('[PaymentForm] Enabled payment methods:', config.defaultPaymentMethods);
+    const filtered = allPaymentMethods.filter(method => 
+      config.defaultPaymentMethods.includes(method.value as any)
+    );
+    console.log('[PaymentForm] Filtered methods:', filtered.map(m => m.value));
+    return filtered;
+  }, [config?.defaultPaymentMethods]);
+
+  // Update payment method if current value is not in enabled methods
+  useEffect(() => {
+    const currentMethod = watch('paymentMethod');
+    const isCurrentMethodEnabled = paymentMethods.some(m => m.value === currentMethod);
+    
+    if (!isCurrentMethodEnabled && paymentMethods.length > 0) {
+      console.log('[PaymentForm] Current method not enabled, switching to:', paymentMethods[0].value);
+      setValue('paymentMethod', paymentMethods[0].value as any);
+    }
+  }, [paymentMethods, watch, setValue]);
 
   const onSubmit = async (values: PaymentFormValues) => {
     console.log("Form submission started");

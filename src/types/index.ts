@@ -183,6 +183,12 @@ export const PERMISSIONS = {
   PAYMENTS_DELETE: "payments.delete",
   PAYMENTS_REVERSE: "payments.reverse",
 
+  // Scholarship Management
+  SCHOLARSHIPS_VIEW: "scholarships.view",
+  SCHOLARSHIPS_CREATE: "scholarships.create",
+  SCHOLARSHIPS_EDIT: "scholarships.edit",
+  SCHOLARSHIPS_DELETE: "scholarships.delete",
+
   // Expense Management
   EXPENSES_VIEW: "expenses.view",
   EXPENSES_CREATE: "expenses.create",
@@ -363,6 +369,7 @@ export interface FeeItem {
   type: FeeType;
   amount: number;
   isMandatory: boolean;
+  isOptional?: boolean; // True for optional fees like feeding
   description?: string;
 }
 
@@ -376,11 +383,23 @@ export interface StudentFeeAssignment {
   academicYear: string;
   term: "first" | "second" | "third";
   feeItems: StudentFeeItem[];
-  totalAmount: number;
+  
+  // Scholarship/Discount fields
+  scholarshipId?: string;
+  scholarshipName?: string;
+  scholarshipType?: "percentage" | "fixed_amount" | "waiver";
+  scholarshipValue?: number; // Percentage (0-100) or fixed amount
+  discountAmount?: number; // Actual discount applied
+  
+  // Amounts
+  originalAmount?: number; // Total before any discounts
+  totalAmount: number; // After discounts
   amountPaid: number;
   balance: number;
+  
   status: "unpaid" | "partial" | "paid" | "overpaid";
   dueDate?: string;
+  notes?: string;
   createdAt: bigint;
   updatedAt: bigint;
   [key: string]: unknown;
@@ -394,6 +413,98 @@ export interface StudentFeeItem {
   amountPaid: number;
   balance: number;
   isMandatory: boolean;
+  isOptional?: boolean; // True for optional fees
+  isSelected?: boolean; // Whether student opted into this optional fee
+}
+
+// ============================================
+// SCHOLARSHIPS & DISCOUNTS
+// ============================================
+
+export type ScholarshipType = "percentage" | "fixed_amount" | "full_waiver";
+export type ScholarshipStatus = "active" | "suspended" | "expired";
+
+export interface Scholarship {
+  id: string;
+  name: string;
+  description?: string;
+  type: ScholarshipType;
+  
+  // Discount value
+  percentageOff?: number; // For percentage type (0-100)
+  fixedAmountOff?: number; // For fixed_amount type
+  
+  // Applicability
+  applicableTo: "all" | "specific_classes" | "specific_students";
+  classIds?: string[]; // If applicableTo is specific_classes
+  studentIds?: string[]; // If applicableTo is specific_students
+  
+  // Fee type restrictions (which fees can be discounted)
+  applicableToFeeTypes?: FeeType[]; // If empty, applies to all
+  excludedFeeTypes?: FeeType[]; // Fees that should not be discounted
+  
+  // Validity period
+  startDate: string;
+  endDate?: string;
+  academicYear?: string;
+  terms?: ("first" | "second" | "third")[]; // Which terms it applies to
+  
+  // Limits
+  maxBeneficiaries?: number; // Maximum number of students
+  currentBeneficiaries?: number; // Current count
+  maxDiscountPerStudent?: number; // Maximum discount amount per student
+  
+  // Requirements/Criteria
+  criteria?: {
+    minAttendancePercentage?: number;
+    minGradeAverage?: number;
+    requiresApproval?: boolean;
+    requiresDocumentation?: boolean;
+    otherCriteria?: string;
+  };
+  
+  // Metadata
+  status: ScholarshipStatus;
+  sponsor?: string; // Who is funding this scholarship
+  notes?: string;
+  createdBy: string;
+  approvedBy?: string;
+  approvedAt?: bigint;
+  createdAt: bigint;
+  updatedAt: bigint;
+  [key: string]: unknown;
+}
+
+export interface ScholarshipApplication {
+  id: string;
+  scholarshipId: string;
+  scholarshipName: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  className: string;
+  academicYear: string;
+  term: "first" | "second" | "third";
+  
+  // Application details
+  applicationDate: string;
+  reason?: string;
+  supportingDocuments?: string[]; // URLs to uploaded documents
+  
+  // Status
+  status: "pending" | "approved" | "rejected" | "expired";
+  reviewedBy?: string;
+  reviewedAt?: bigint;
+  reviewNotes?: string;
+  
+  // If approved
+  approvedAmount?: number;
+  effectiveFrom?: string;
+  effectiveUntil?: string;
+  
+  createdAt: bigint;
+  updatedAt: bigint;
+  [key: string]: unknown;
 }
 
 // ============================================

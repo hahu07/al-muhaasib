@@ -9,7 +9,36 @@
 //! Note: Basic input validation (required fields, formats) is handled on frontend.
 
 use junobuild_satellite::AssertSetDocContext;
-use crate::modules::utils::validation_utils::validate_positive_amount;
+use junobuild_utils::decode_doc_data;
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BankTransactionData {
+    pub debit_amount: f64,
+    pub credit_amount: f64,
+    pub balance: f64,
+    pub status: String,
+    pub is_reconciled: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InterAccountTransferData {
+    pub from_account_id: String,
+    pub to_account_id: String,
+    pub amount: f64,
+    pub status: String,
+    pub approved_by: Option<String>,
+    pub approved_at: Option<u64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BankAccountData {
+    pub account_type: String,
+    pub balance: f64,
+}
 
 // Security Constants
 const MAX_SINGLE_TRANSACTION: f64 = 1_000_000_000.0; // ₦1B - Suspicious transaction threshold
@@ -23,16 +52,11 @@ const OVERDRAFT_ALERT_THRESHOLD: f64 = -10_000_000.0; // ₦10M negative - Alert
 /// - Fraud detection (unreasonable amounts)
 /// - Balance consistency (detect suspicious overdrafts)
 pub fn validate_bank_transaction(context: &AssertSetDocContext) -> Result<(), String> {
-    let data = &context.data.data;
+    let data: BankTransactionData = decode_doc_data(&context.data.data.proposed.data)
+        .map_err(|e| format!("Invalid bank transaction data format: {}", e))?;
     
-    // CRITICAL: Validate amounts are non-negative (prevent fraud)
-    let debit = data.get("debitAmount")
-        .and_then(|v| v.as_f64())
-        .ok_or("Invalid debit amount")?;
-    
-    let credit = data.get("creditAmount")
-        .and_then(|v| v.as_f64())
-        .ok_or("Invalid credit amount")?;
+    let debit = data.debit_amount;
+    let credit = data.credit_amount;
     
     if debit < 0.0 || credit < 0.0 {
         return Err("SECURITY: Transaction amounts cannot be negative".to_string());
@@ -58,31 +82,25 @@ pub fn validate_bank_transaction(context: &AssertSetDocContext) -> Result<(), St
     }
     
     // FRAUD DETECTION: Alert on excessive overdrafts
-    if let Some(balance) = data.get("balance").and_then(|v| v.as_f64()) {
-        if balance < OVERDRAFT_ALERT_THRESHOLD {
-            return Err(format!(
-                "FRAUD ALERT: Account balance ₦{:.2} exceeds reasonable overdraft limit. Verify account status.",
-                balance
-            ));
-        }
+    if data.balance < OVERDRAFT_ALERT_THRESHOLD {
+        return Err(format!(
+            "FRAUD ALERT: Account balance ₦{:.2} exceeds reasonable overdraft limit. Verify account status.",
+            data.balance
+        ));
     }
     
     // AUDIT: Ensure status transitions are valid
-    if let Some(status) = data.get("status").and_then(|v| v.as_str()) {
-        let valid_statuses = ["pending", "cleared", "reconciled"];
-        if !valid_statuses.contains(&status) {
-            return Err(format!("Invalid status '{}'. Must be: pending, cleared, or reconciled", status));
-        }
+    let valid_statuses = ["pending", "cleared", "reconciled"];
+    if !valid_statuses.contains(&data.status.as_str()) {
+        return Err(format!("Invalid status '{}'. Must be: pending, cleared, or reconciled", data.status));
+    }
+    
+    // If reconciled, must have reconciled flag set
+    if data.status == "reconciled" {
+        let is_reconciled = data.is_reconciled.unwrap_or(false);
         
-        // If reconciled, must have reconciled flag set
-        if status == "reconciled" {
-            let is_reconciled = data.get("isReconciled")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            
-            if !is_reconciled {
-                return Err("AUDIT: Status is 'reconciled' but isReconciled flag is false".to_string());
-            }
+        if !is_reconciled {
+            return Err("AUDIT: Status is 'reconciled' but isReconciled flag is false".to_string());
         }
     }
     
@@ -96,63 +114,45 @@ pub fn validate_bank_transaction(context: &AssertSetDocContext) -> Result<(), St
 /// - Amount limits (approval workflow)
 /// - High-value transfer approval requirements
 pub fn validate_transfer(context: &AssertSetDocContext) -> Result<(), String> {
-    let data = &context.data.data;
+    let data: InterAccountTransferData = decode_doc_data(&context.data.data.proposed.data)
+        .map_err(|e| format!("Invalid transfer data format: {}", e))?;
     
     // CRITICAL: Validate from/to accounts are different (prevent circular transfers)
-    let from_id = data.get("fromAccountId")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing fromAccountId")?;
-    
-    let to_id = data.get("toAccountId")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing toAccountId")?;
-    
-    if from_id == to_id {
+    if data.from_account_id == data.to_account_id {
         return Err("SECURITY: Cannot transfer to the same account. Self-transfers are prohibited.".to_string());
     }
     
     // CRITICAL: Validate amount is positive
-    let amount = data.get("amount")
-        .and_then(|v| v.as_f64())
-        .ok_or("Invalid amount")?;
-    
-    validate_positive_amount(amount, "Transfer amount")?;
+    if data.amount <= 0.0 {
+        return Err("Transfer amount must be greater than 0".to_string());
+    }
     
     // FRAUD DETECTION: Check for unreasonably large transfers
-    if amount > MAX_SINGLE_TRANSACTION {
+    if data.amount > MAX_SINGLE_TRANSACTION {
         return Err(format!(
             "FRAUD ALERT: Transfer amount ₦{:.2} exceeds maximum limit. Contact administrator.",
-            amount
+            data.amount
         ));
     }
     
     // APPROVAL WORKFLOW: High-value transfers require approval before completion
-    let status = data.get("status")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing status")?;
-    
     let valid_statuses = ["pending", "approved", "completed", "rejected", "cancelled"];
-    if !valid_statuses.contains(&status) {
-        return Err(format!("Invalid status '{}'", status));
+    if !valid_statuses.contains(&data.status.as_str()) {
+        return Err(format!("Invalid status '{}'", data.status));
     }
     
     // CRITICAL: Transfers over threshold require approval
-    if amount > MAX_TRANSFER_WITHOUT_APPROVAL {
-        if status == "completed" {
+    if data.amount > MAX_TRANSFER_WITHOUT_APPROVAL {
+        if data.status == "completed" {
             // Must have approvedBy and approvedAt
-            let approved_by = data.get("approvedBy")
-                .and_then(|v| v.as_str());
-            
-            let approved_at = data.get("approvedAt");
-            
-            if approved_by.is_none() || approved_by.unwrap().trim().is_empty() {
+            if data.approved_by.is_none() || data.approved_by.as_ref().unwrap().trim().is_empty() {
                 return Err(format!(
                     "APPROVAL REQUIRED: Transfers over ₦{:.2} require approval before completion",
                     MAX_TRANSFER_WITHOUT_APPROVAL
                 ));
             }
             
-            if approved_at.is_none() {
+            if data.approved_at.is_none() {
                 return Err("AUDIT: Approved transfers must have approvedAt timestamp".to_string());
             }
         }
@@ -168,26 +168,21 @@ pub fn validate_transfer(context: &AssertSetDocContext) -> Result<(), String> {
 /// - Balance integrity (detect suspicious balances)
 /// - Account type validation
 pub fn validate_bank_account(context: &AssertSetDocContext) -> Result<(), String> {
-    let data = &context.data.data;
+    let data: BankAccountData = decode_doc_data(&context.data.data.proposed.data)
+        .map_err(|e| format!("Invalid bank account data format: {}", e))?;
     
     // CRITICAL: Validate account type
-    let account_type = data.get("accountType")
-        .and_then(|v| v.as_str())
-        .ok_or("Missing accountType")?;
-    
     let valid_types = ["current", "savings"];
-    if !valid_types.contains(&account_type) {
-        return Err(format!("Invalid accountType '{}'. Must be: current or savings", account_type));
+    if !valid_types.contains(&data.account_type.as_str()) {
+        return Err(format!("Invalid accountType '{}'. Must be: current or savings", data.account_type));
     }
     
     // FRAUD DETECTION: Alert on unreasonably negative balances
-    if let Some(balance) = data.get("balance").and_then(|v| v.as_f64()) {
-        if balance < -50_000_000.0 {
-            return Err(format!(
-                "FRAUD ALERT: Account balance ₦{:.2} is unreasonably negative. Verify account integrity.",
-                balance
-            ));
-        }
+    if data.balance < -50_000_000.0 {
+        return Err(format!(
+            "FRAUD ALERT: Account balance ₦{:.2} is unreasonably negative. Verify account integrity.",
+            data.balance
+        ));
     }
     
     Ok(())

@@ -13,6 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Settings,
   School,
   Palette,
@@ -30,9 +38,11 @@ import {
   CreditCard,
   ToggleLeft,
   ToggleRight,
+  X,
 } from "lucide-react";
 import { schoolConfigService } from "@/services/schoolConfigService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSchool } from "@/contexts/SchoolContext";
 import type { SchoolConfig, AcademicTerm, ModuleName } from "@/types";
 import { EnhancedBrandingSettings } from "@/components/settings/EnhancedBrandingSettings";
 import { BankAccountSettings } from "@/components/settings/BankAccountSettings";
@@ -47,6 +57,7 @@ type TabType =
 
 export default function SettingsPage() {
   const { appUser } = useAuth();
+  const { refreshConfig: refreshSchoolContext } = useSchool();
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [config, setConfig] = useState<SchoolConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +108,12 @@ export default function SettingsPage() {
       "cash" | "bank_transfer" | "pos" | "online" | "cheque"
     >,
   });
+
+  const [showModuleWarning, setShowModuleWarning] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    module: ModuleName | null;
+  }>({ show: false, module: null });
 
   useEffect(() => {
     loadConfig();
@@ -279,6 +296,8 @@ export default function SettingsPage() {
 
       setSuccess("Module settings saved successfully!");
       await loadConfig();
+      // Refresh SchoolContext so module restrictions take effect
+      await refreshSchoolContext();
     } catch (err) {
       console.error("Error saving module settings:", err);
       setError("Failed to save module settings");
@@ -303,6 +322,8 @@ export default function SettingsPage() {
 
       setSuccess("Payment settings saved successfully!");
       await loadConfig();
+      // Refresh SchoolContext so forms pick up new payment methods
+      await refreshSchoolContext();
     } catch (err) {
       console.error("Error saving payment settings:", err);
       setError("Failed to save payment settings");
@@ -312,11 +333,82 @@ export default function SettingsPage() {
   };
 
   const handleToggleModule = (module: ModuleName) => {
-    setModulesForm((prev) =>
-      prev.includes(module)
-        ? prev.filter((m) => m !== module)
-        : [...prev, module],
-    );
+    const isCurrentlyEnabled = modulesForm.includes(module);
+    
+    if (isCurrentlyEnabled) {
+      // Show confirmation dialog when disabling a module
+      setConfirmDialog({ show: true, module });
+    } else {
+      // Enable module directly
+      setModulesForm((prev) => [...prev, module]);
+    }
+  };
+
+  const confirmDisableModule = () => {
+    if (confirmDialog.module) {
+      setModulesForm((prev) => prev.filter((m) => m !== confirmDialog.module));
+    }
+    setConfirmDialog({ show: false, module: null });
+  };
+
+  const getModuleImplications = (module: ModuleName): string[] => {
+    const implications: Record<ModuleName, string[]> = {
+      students: [
+        "Student profiles and enrollment records will be hidden",
+        "Class assignment and student data management will be unavailable",
+        "Student-related reports will not be accessible"
+      ],
+      fees: [
+        "Fee structure configuration will be disabled",
+        "Fee categories and amounts cannot be managed",
+        "Fee assignment to students will not be possible",
+        "Fee-related reports will be unavailable"
+      ],
+      payments: [
+        "Payment recording and tracking will be disabled",
+        "Payment receipts cannot be generated",
+        "Payment history and analytics will be hidden",
+        "Outstanding balance tracking will not work"
+      ],
+      expenses: [
+        "Expense recording and management will be disabled",
+        "Expense approval workflows will not function",
+        "Expense categories and tracking will be unavailable",
+        "Expense reports and analytics will be hidden"
+      ],
+      staff: [
+        "Staff profiles and management will be disabled",
+        "Payroll processing and salary management will not work",
+        "Staff attendance and leave management will be unavailable",
+        "HR-related reports will be hidden"
+      ],
+      assets: [
+        "Fixed asset tracking will be disabled",
+        "Asset depreciation calculations will not work",
+        "Asset maintenance records will be unavailable",
+        "Asset valuation reports will be hidden"
+      ],
+      reports: [
+        "All financial and operational reports will be disabled",
+        "Data export and analytics features will not work",
+        "Dashboard insights and charts will be limited",
+        "Compliance reporting will be unavailable"
+      ],
+      accounting: [
+        "Chart of accounts management will be disabled",
+        "Journal entries and double-entry bookkeeping will not work",
+        "Trial balance and financial statements will be unavailable",
+        "Advanced accounting features will be hidden"
+      ],
+      banking: [
+        "Bank account management will be disabled",
+        "Transaction import and reconciliation will not work",
+        "Cash flow tracking will be unavailable",
+        "Banking reports and analytics will be hidden"
+      ]
+    };
+    
+    return implications[module] || [];
   };
 
   const handleTogglePaymentMethod = (
@@ -835,12 +927,23 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
-                <AlertDescription className="text-sm text-blue-800 dark:text-blue-300">
-                  <strong>Tip:</strong> Disable modules you don&apos;t need to
-                  simplify your interface. You can always re-enable them later.
-                </AlertDescription>
-              </Alert>
+              {showModuleWarning && (
+                <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+                  <AlertDescription className="flex items-start justify-between text-sm text-blue-800 dark:text-blue-300">
+                    <span>
+                      <strong>Tip:</strong> Disable modules you don&apos;t need to
+                      simplify your interface. You can always re-enable them later.
+                    </span>
+                    <button
+                      onClick={() => setShowModuleWarning(false)}
+                      className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                      aria-label="Dismiss warning"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {[
@@ -1133,6 +1236,70 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog for Disabling Modules */}
+      <Dialog
+        open={confirmDialog.show}
+        onOpenChange={(open) =>
+          setConfirmDialog({ show: open, module: confirmDialog.module })
+        }
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+              <AlertTriangle className="h-5 w-5" />
+              Disable Module?
+            </DialogTitle>
+            <DialogDescription>
+              {confirmDialog.module && (
+                <span className="font-semibold capitalize">
+                  {confirmDialog.module.replace("_", " ")}
+                </span>
+              )}{" "}
+              module will be disabled. This will affect the following features:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {confirmDialog.module && (
+              <ul className="space-y-2">
+                {getModuleImplications(confirmDialog.module).map(
+                  (implication, index) => (
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      <span className="mt-1 text-orange-500">•</span>
+                      <span>{implication}</span>
+                    </li>
+                  ),
+                )}
+              </ul>
+            )}
+            <div className="mt-4 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                <strong>Note:</strong> Your existing data will not be deleted. You
+                can re-enable this module anytime to restore functionality.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialog({ show: false, module: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmDisableModule}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Disable Module
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

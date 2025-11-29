@@ -16,6 +16,7 @@ export * from "./classService";
 // Revenue management
 export * from "./feeService";
 export * from "./paymentService";
+export * from "./scholarshipService";
 
 // Expense management
 export * from "./expenseService";

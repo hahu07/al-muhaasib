@@ -14,7 +14,7 @@ import {
   Users,
   Settings,
   Calculator,
-  Wrench,
+  Banknote,
   ArrowRight,
   Info,
   Shield,
@@ -94,19 +94,19 @@ export default function DashboardPage() {
       ],
     },
     {
-      title: "Development Tools",
-      description: "Quick access to all pages for testing (Dev only)",
-      icon: <Wrench className="h-12 w-12" />,
-      href: "/dashboard/dev",
-      color: "from-orange-500 to-orange-600",
-      bgColor: "bg-orange-50 dark:bg-orange-900/20",
-      borderColor: "border-orange-200 dark:border-orange-800",
+      title: "Banking",
+      description: "Manage bank accounts, transactions, and reconciliation",
+      icon: <Banknote className="h-12 w-12" />,
+      href: "/dashboard/banking",
+      color: "from-teal-500 to-teal-600",
+      bgColor: "bg-teal-50 dark:bg-teal-900/20",
+      borderColor: "border-teal-200 dark:border-teal-800",
       restricted: false,
       features: [
-        "Quick navigation",
-        "All pages overview",
-        "Development testing",
-        "Feature discovery",
+        "Bank accounts dashboard",
+        "Transaction reconciliation",
+        "Statement import",
+        "Cash flow projections",
       ],
     },
   ];
@@ -171,7 +171,7 @@ export default function DashboardPage() {
               Use <strong>Accounting Dashboard</strong> for daily operations
             </li>
             <li>
-              Explore all features via <strong>Development Tools</strong>
+              Manage finances and bank accounts via <strong>Banking</strong>
             </li>
           </ol>
         </AlertDescription>
